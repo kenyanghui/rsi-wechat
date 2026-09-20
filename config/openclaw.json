@@ -1,0 +1,82 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/root/.openclaw/workspace",
+      "mediaMaxMb": 200,
+      "model": {
+        "primary": "deepseek/deepseek-flash"
+      },
+      "imageGenerationModel": {
+        "primary": "bailian/wanx-1.2-t2i"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "model": "deepseek/deepseek-flash"
+      },
+      {
+        "id": "writer",
+        "workspace": "/root/agents/writer",
+        "agentDir": "/root/.openclaw/agents/writer/agent",
+        "model": "deepseek/deepseek-flash"
+      },
+      {
+        "id": "topic",
+        "workspace": "/root/agents/topic",
+        "agentDir": "/root/.openclaw/agents/topic/agent",
+        "model": "deepseek/deepseek-flash"
+      },
+      {
+        "id": "qa",
+        "workspace": "/root/agents/qa",
+        "agentDir": "/root/.openclaw/agents/qa/agent",
+        "model": "deepseek/deepseek-flash"
+      },
+      {
+        "id": "format",
+        "workspace": "/root/agents/format",
+        "agentDir": "/root/.openclaw/agents/format/agent",
+        "model": "deepseek/deepseek-flash"
+      }
+    ]
+  },
+  "models": {
+    "providers": {
+      "deepseek": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "apiKey": "{{DEEPSEEK_API_KEY}}",
+        "api": "openai-completions",
+        "models": [
+          { "id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro" },
+          { "id": "deepseek-flash", "name": "DeepSeek V4.1 Flash", "input": ["image", "text"] }
+        ]
+      },
+      "bailian": {
+        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "apiKey": "{{BAILIAN_API_KEY}}",
+        "api": "openai-completions",
+        "models": [
+          { "id": "qwen-vl-plus", "name": "Qwen VL Plus" },
+          { "id": "qwen-vl-max", "name": "Qwen VL Max" },
+          { "id": "wanx-1.2-t2i", "name": "Wanx 1.2 T2I" }
+        ]
+      }
+    },
+    "mode": "merge"
+  },
+  "channels": {
+    "lightclawbot": {
+      "accounts": {
+        "{{LIGHTCLAWBOT_ACCOUNT_ID}}": {
+          "apiKey": "{{DEEPSEEK_API_KEY}}"
+        }
+      },
+      "site": "cn",
+      "enabled": true
+    }
+  },
+  "browser": {
+    "enabled": false
+  }
+}
