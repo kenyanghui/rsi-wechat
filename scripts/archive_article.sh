@@ -27,7 +27,9 @@ PIPELINE_DIR="${2:-/root/agents/shared/pipeline/${DATE}}"
 TITLE_OVERRIDE="${3:-}"
 
 REPO_REMOTE="origin"
-BRANCH="$(git -C "${SKILL_DIR}" symbolic-ref --short HEAD 2>/dev/null || echo main)"
+# 远端规范分支（本地分支名可能不同，如本地 master → 远端 main）
+BRANCH="${RSI_REMOTE_BRANCH:-main}"
+LOCAL_BRANCH="$(git -C "${SKILL_DIR}" symbolic-ref --short HEAD 2>/dev/null || echo main)"
 
 echo "=== rsi-wechat 文章归档 ==="
 echo "日期: ${DATE}"
@@ -195,7 +197,7 @@ fi
 PUSH_OK=0
 for attempt in 1 2 3; do
   if GIT_TERMINAL_PROMPT=0 git -c http.lowSpeedLimit=100 -c http.lowSpeedTime=60 -c http.connectTimeout=30 \
-       push "${REPO_REMOTE}" "${BRANCH}" 2>/dev/null; then
+       push "${REPO_REMOTE}" "${LOCAL_BRANCH}:${BRANCH}" 2>/dev/null; then
     echo "✅ 已推送到 GitHub (${REPO_REMOTE}/${BRANCH})"; PUSH_OK=1; break
   fi
   echo "   ⚠️  推送尝试 ${attempt} 失败" >&2
