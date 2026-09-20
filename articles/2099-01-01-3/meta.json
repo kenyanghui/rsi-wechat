@@ -1,0 +1,12 @@
+{
+  "date": "2099-01-01",
+  "title": "\u6d4b\u8bd5\u4e09",
+  "source_pipeline": "/tmp/tmp.H9yLPPRUAX",
+  "media_id": "MID_THREE",
+  "archived_at": "2026-09-20T22:23:00+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
