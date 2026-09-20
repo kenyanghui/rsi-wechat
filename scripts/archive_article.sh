@@ -18,6 +18,13 @@ PIPELINE_DIR="${2:-/root/agents/shared/pipeline/${DATE}}"
 TITLE="${3:-}"
 
 DEST="${SKILL_DIR}/articles/${DATE}"
+# 同日多篇：若当天目录已存在且含 article.md，自动编号为 <日期>-2、-3 …
+if [ -f "${DEST}/article.md" ]; then
+  n=2
+  while [ -f "${SKILL_DIR}/articles/${DATE}-${n}/article.md" ]; do n=$((n+1)); done
+  DEST="${SKILL_DIR}/articles/${DATE}-${n}"
+  echo "ℹ️  当天已存在归档，改用编号目录: articles/${DATE}-${n}"
+fi
 REPO_REMOTE="origin"
 BRANCH="$(git -C "${SKILL_DIR}" symbolic-ref --short HEAD 2>/dev/null || echo main)"
 
@@ -57,16 +64,29 @@ if [ -d "${PIPELINE_DIR}/format/imgs" ]; then
 fi
 
 # 4. 生成 meta.json
-# 从 04_publish_queue.md 抓 media_id（若有）
-MEDIA_ID="$(grep -oE 'draft[^|]*media_id[^|]*|media_id[:：]?\s*[A-Za-z0-9_-]+' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 | sed -E 's/.*media_id[:：]?\s*//' || true)"
-[ -z "${TITLE}" ] && TITLE="$(grep -m1 '^# ' "${DEST}/article.md" 2>/dev/null | sed 's/^# //' || true)"
+json_escape() {
+  # 转义 JSON 字符串中的特殊字符（反斜杠、双引号、控制符）
+  printf '%s' "$1" | python3 -c 'import json,sys; sys.stdout.write(json.dumps(sys.stdin.read())[1:-1])' 2>/dev/null \
+    || printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+# 从 04_publish_queue.md 抓 draft media_id（优先匹配反引号包裹的值）
+MEDIA_ID="$(grep -oE 'media_id[^`]*`[A-Za-z0-9_-]{20,}`' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 | grep -oE '[A-Za-z0-9_-]{20,}' | head -1 || true)"
+if [ -z "${MEDIA_ID}" ]; then
+  MEDIA_ID="$(grep -oE '[A-Za-z0-9_-]{40,}' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 || true)"
+fi
+[ -z "${TITLE}" ] && TITLE="$(grep -m1 '^# \|^title:' "${DEST}/article.md" 2>/dev/null | sed -E 's/^# //; s/^title:[[:space:]]*//' || true)"
+[ -z "${TITLE}" ] && TITLE="$DATE"
+
+TITLE_ESC="$(json_escape "${TITLE}")"
+MEDIA_ESC="$(json_escape "${MEDIA_ID}")"
 
 cat > "${DEST}/meta.json" <<EOF
 {
   "date": "${DATE}",
-  "title": "${TITLE}",
+  "title": "${TITLE_ESC}",
   "source_pipeline": "${PIPELINE_DIR}",
-  "media_id": "${MEDIA_ID}",
+  "media_id": "${MEDIA_ESC}",
   "archived_at": "$(date -Iseconds)",
   "files": {
     "article": "article.md",
@@ -79,7 +99,8 @@ echo "✅ 元数据已生成: ${DEST}/meta.json"
 
 # 5. 提交并推送
 cd "${SKILL_DIR}"
-git add "articles/${DATE}" >/dev/null 2>&1 || true
+REL_DEST="${DEST#${SKILL_DIR}/}"
+git add "${REL_DEST}" >/dev/null 2>&1 || true
 if git diff --cached --quiet; then
   echo "ℹ️  无变更需提交（可能已归档过）"
 else
