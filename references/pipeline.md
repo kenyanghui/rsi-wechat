@@ -1,0 +1,99 @@
+# 四步流水线详细编排（rsi-wechat）
+
+> 本文件描述 `topic → writer → qa → format` 四步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
+
+## 编排总览
+
+```
+主控（main）
+  │
+  ├── Step 0：读 RSI 进化台账 + 建产物目录
+  ├── Step 1：spawn topic  → 01_topics.md（选题，从 IMA 挖素材）
+  ├── Step 2：spawn writer → 02_drafts.json（写作）
+  ├── Step 3：spawn qa     → 03_qa_scores.md（质检）
+  ├── Step 4：spawn format → 04_publish_queue.md + 草稿箱（排版发文）
+  └── Step 5：回写 RSI 台账 + 简报
+```
+
+## Step 0：预热（主控执行）
+
+1. 确认日期，创建产物目录 `/root/agents/shared/pipeline/<YYYY-MM-DD>/`。
+2. 读 RSI 进化台账 `_rsi_ledger.md`，提炼出本轮硬约束：
+   - **素材避重**：7 天内复用 / 累计≥2 次的源清单。
+   - **风格偏好**：上轮验证有效的标题模式/调性。
+   - **金句库**：可复用的验证过金句。
+3. 把这些硬约束**拼进 topic 的 task 文本**，强制选题 agent 遵守。
+
+## Step 1：topic（选题）
+
+**spawn 参数**：`agentId: topic`
+
+**task 必含内容**：
+- 读 `/root/agents/shared/SOURCE-LEDGER.md` 做查重（与 RSI 台账联动）。
+- 从 IMA 知识库「AI量化杨老师」挖素材：
+  1. 读 skill `skills/ima-skills/knowledge-base/SKILL.md`
+  2. `search_knowledge` 搜索主题（量化投资/AI投资/财富传承/投资者行为）
+  3. `get_knowledge_list` 浏览结构（limit 50）
+  4. 找到爆款潜质素材作为主素材
+- **外部参考链接**可用 `baoyu-url-to-markdown` 转成素材备用。
+- 输出 `01_topics.md`（含风格卡、爆款点、200字+ Brief、本轮源清单）。
+
+**验收**：`01_topics.md` 末尾必须有「本轮源清单」，标注新增/复用+累计次数。
+
+## Step 2：writer（写作）
+
+**spawn 参数**：`agentId: writer`
+
+**task 必含内容**：
+- 读 `01_topics.md`，研读标题、风格卡、核心素材、爆款点、Brief。
+- 读 RSI 台账的「风格偏好」「金句库」，沿用有效模式。
+- 写完整长文（2200-2600 字），**付费段/干货段绝不占位**。
+- 输出 `02_drafts.json`（标题、备选标题、摘要、正文、风格卡、风险提示）。
+
+**验收**：正文 ≥2200 字，含风险提示，无「待补充/省略」。
+
+## Step 3：qa（质检）
+
+**spawn 参数**：`agentId: qa`
+
+**task 必含内容**：
+- 读 `02_drafts.json` 所有草稿。
+- 严格按 `qa-rubric.md` 打分（标题15/干货30/结构15/可读15/情绪10/原创15）。
+- 评级：≥80 入库 / 60-79 打回 / <60 丢弃。
+- **合规一票否决**：命中红线直接不采纳；投资内容必含风险提示。
+- 输出 `03_qa_scores.md`。
+
+**验收**：每篇有总分、评级、合规检查结论。
+
+## Step 4：format（排版发文）⭐ 整合 9 个 baoyu 能力的关键环节
+
+**spawn 参数**：`agentId: format`
+
+**task 必含内容**（按顺序执行）：
+
+1. 读 `03_qa_scores.md`，只取 ≥80 分条目。
+2. 执行 qa 提示的轻量微调（弱化绝对化用语、合并重复话术）。
+3. **生成封面图**（`baoyu-cover-image`）：读 SKILL.md，按 2.35:1 生成公众号封面。
+4. **生成文章插图**（`baoyu-article-illustrator`）：读 SKILL.md，分析正文结构，在关键段落定位插图，生成配图。
+5. **图片压缩**（`baoyu-compress-image`）：所有配图转 WebP 并压缩到目标体积。
+6. **Markdown 转 HTML**（`baoyu-markdown-to-html`）：正文转微信兼容 HTML，套用 theme `default` / color `blue`。
+7. **推公众号草稿箱**（`baoyu-post-to-wechat`）：API 方式，保存草稿，**绝不群发**。
+8. 写 `04_publish_queue.md`（含 media_id、封面是否需要人工补）。
+
+**验收**：草稿已进草稿箱，拿到 media_id，`04_publish_queue.md` 已写。
+
+**红线**：绝不使用 `--submit`，到人工闸门即停。
+
+## Step 5：回写台账 + 简报（主控执行）
+
+1. 更新 RSI 进化台账 `_rsi_ledger.md`：
+   - 素材避重表追加本轮新源。
+   - 风格偏好/金句库按质检分和人工反馈更新。
+   - RSI 回路快照追加本轮（质检分变化、比上轮强在哪、下轮重点）。
+2. 同步更新 `/root/agents/shared/SOURCE-LEDGER.md`。
+3. 向用户简报：选题、过审/打回/丢弃、待发布清单、本轮新增源与高频复用源。
+
+## 失败处理
+
+- 任一步失败：整链中止，产物移至 `/root/agents/shared/pipeline-failed/<date>_<HHMMSS>/`，向用户告警。
+- 全程写 `_run.log` 与 `_status.json` 到产物目录。
