@@ -2,7 +2,15 @@
 
 > 本文件描述 `topic → writer → qa → format → archive` 五步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
 
-## 编排总览
+## 每天产出 3 篇（当前模式）
+
+一天跑 **3 轮**上述五步流水线，3 篇角度/素材互不重复（建议「认知层 / 商业层 / 心智层」三翼），全部推草稿箱，由杨辉老师人工选择群发。
+
+- 产物按篇分目录：`<日期>/p1/`、`<日期>/p2/`、`<日期>/p3/`（各含 01~04 + format/）。
+- 拼装 topic task 时，除查重台账外，还需把「本日已选定的其他 2 篇角度/源」贴进去，强制 3 篇不撞题。
+- 归档：`archive_article.sh` 支持同日多篇，自动编号 `articles/<日期>/`、`-2/`、`-3/`；推荐让 format 产出 `format/manifest.json`（多篇清单）供归档脚本读取。
+
+## 编排总览（单篇，每日重复 3 次）
 
 ```
 主控（main）
@@ -12,7 +20,7 @@
   ├── Step 2：spawn writer → 02_drafts.json（写作）
   ├── Step 3：spawn qa     → 03_qa_scores.md（质检）
   ├── Step 4：spawn format → 04_publish_queue.md + 草稿箱（排版发文）
-  ├── Step 5：archive（主控执行）→ articles/<日期>/ + GitHub 同步
+  ├── Step 5：archive（主控执行）→ articles/<日期>[-n]/ + GitHub 同步
   └── Step 6：回写 RSI 台账 + 简报
 ```
 
@@ -91,13 +99,14 @@
 
 **动作**：
 1. 读 `04_publish_queue.md`，只归档**已进草稿箱**的条目（带 media_id）。
-2. 调用 `scripts/archive_article.sh <日期> <产物目录>`：
-   - 收集 `format/article.md`、封面、配图 → 写入 `articles/<日期>/`。
-   - 生成 `meta.json`（标题/摘要/作者/质检分/media_id/封面/标签/源）。
-   - `git add` → `git commit -m "article: <标题> (<日期>)"` → `git push`。
-3. 若 push 失败（网络/认证），不阻断主流程，记录到 `_rsi_ledger.md` 并向用户告警。
+2. 调用 `scripts/archive_article.sh <日期> <产物目录>`（支持同日多篇）：
+   - 优先读 `<产物目录>/format/manifest.json`（多篇清单），否则扫描 `article*.md`。
+   - 逐篇收集正文、封面、配图 → 写入 `articles/<日期>/`、`-2/`、`-3/`（自动编号，绝不覆盖）。
+   - 生成每篇 `meta.json`（标题/摘要/作者/质检分/media_id/封面/标签/源）。
+   - 一次性 `git add` → `git commit` → `git push`。
+3. 若 push 失败（网络/认证），不阻断主流程，脚本内置 3 次重试；仍失败则记录到 `_rsi_ledger.md` 并向用户告警。
 
-**验收**：GitHub 仓库出现当日 commit，`articles/<日期>/` 含 article.md + meta.json。
+**验收**：GitHub 仓库出现当日 commit，`articles/<日期>/`（及 `-2/`、`-3/`）含 article.md + meta.json。
 
 ## Step 6：回写台账 + 简报（主控执行）
 

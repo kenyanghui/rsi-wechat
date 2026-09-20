@@ -1,0 +1,35 @@
+{
+  "date": "<YYYY-MM-DD>",
+  "articles": [
+    {
+      "index": 1,
+      "article": "article.md",
+      "cover": "imgs/cover.png",
+      "title": "<第1篇标题>",
+      "media_id": "<公众号草稿 media_id>",
+      "qa_score": 89,
+      "angle": "<切入角度>",
+      "source": "<主素材来源>"
+    },
+    {
+      "index": 2,
+      "article": "article-2.md",
+      "cover": "imgs/cover-2.png",
+      "title": "<第2篇标题>",
+      "media_id": "<公众号草稿 media_id>",
+      "qa_score": 0,
+      "angle": "<切入角度>",
+      "source": "<主素材来源>"
+    },
+    {
+      "index": 3,
+      "article": "article-3.md",
+      "cover": "imgs/cover-3.png",
+      "title": "<第3篇标题>",
+      "media_id": "<公众号草稿 media_id>",
+      "qa_score": 0,
+      "angle": "<切入角度>",
+      "source": "<主素材来源>"
+    }
+  ]
+}

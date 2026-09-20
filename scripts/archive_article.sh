@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rsi-wechat 文章归档脚本
+# rsi-wechat 文章归档脚本（支持每天多篇）
 # 把已推送到公众号草稿箱的文章，同步归档到 GitHub，便于后续处理。
 #
 # 用法：
@@ -8,85 +8,158 @@
 # 参数：
 #   <YYYY-MM-DD>  文章日期
 #   <产物目录>    流水线产物目录，默认 /root/agents/shared/pipeline/<日期>
-#   [标题]        文章标题（缺省时从 meta 或 article.md 首行推断）
+#   [标题]        单篇归档时的标题覆盖（缺省从 manifest / article.md 推断）
+#
+# 归档目录规则（同日多篇自动编号，绝不覆盖）：
+#   articles/<日期>/      第 1 篇
+#   articles/<日期>-2/    第 2 篇
+#   articles/<日期>-3/    第 3 篇
+#
+# 多篇来源（优先级）：
+#   1) <产物目录>/format/manifest.json   （format 环节产出的清单，推荐）
+#   2) 扫描 <产物目录>/format/article*.md
 
-set -euo pipefail
+set -uo pipefail
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DATE="${1:-$(date +%Y-%m-%d)}"
 PIPELINE_DIR="${2:-/root/agents/shared/pipeline/${DATE}}"
-TITLE="${3:-}"
+TITLE_OVERRIDE="${3:-}"
 
-DEST="${SKILL_DIR}/articles/${DATE}"
-# 同日多篇：若当天目录已存在且含 article.md，自动编号为 <日期>-2、-3 …
-if [ -f "${DEST}/article.md" ]; then
-  n=2
-  while [ -f "${SKILL_DIR}/articles/${DATE}-${n}/article.md" ]; do n=$((n+1)); done
-  DEST="${SKILL_DIR}/articles/${DATE}-${n}"
-  echo "ℹ️  当天已存在归档，改用编号目录: articles/${DATE}-${n}"
-fi
 REPO_REMOTE="origin"
 BRANCH="$(git -C "${SKILL_DIR}" symbolic-ref --short HEAD 2>/dev/null || echo main)"
 
 echo "=== rsi-wechat 文章归档 ==="
 echo "日期: ${DATE}"
 echo "产物目录: ${PIPELINE_DIR}"
-echo "归档目标: ${DEST}"
 
-# 1. 校验产物目录
 if [ ! -d "${PIPELINE_DIR}" ]; then
   echo "❌ 产物目录不存在: ${PIPELINE_DIR}" >&2
   exit 1
 fi
 
-# 2. 收集终稿正文（优先 format/article.md，其次 02_drafts.json 提取）
-mkdir -p "${DEST}/images"
-SRC_MD=""
-for cand in "${PIPELINE_DIR}/format/article.md" "${PIPELINE_DIR}/article.md"; do
-  if [ -f "${cand}" ]; then SRC_MD="${cand}"; break; fi
-done
-
-if [ -n "${SRC_MD}" ]; then
-  cp "${SRC_MD}" "${DEST}/article.md"
-  echo "✅ 正文已归档: ${DEST}/article.md"
-else
-  echo "⚠️  未找到终稿 markdown，跳过正文（请检查 format 产物）"
-fi
-
-# 3. 收集封面与配图
-for cand in "${PIPELINE_DIR}/format/imgs/cover.png" "${PIPELINE_DIR}/imgs/cover.png" "${PIPELINE_DIR}/cover.png"; do
-  if [ -f "${cand}" ]; then cp "${cand}" "${DEST}/cover.png"; echo "✅ 封面已归档"; break; fi
-done
-
-if [ -d "${PIPELINE_DIR}/format/imgs" ]; then
-  find "${PIPELINE_DIR}/format/imgs" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
-    ! -name 'cover.*' -exec cp {} "${DEST}/images/" \; 2>/dev/null || true
-fi
-
-# 4. 生成 meta.json
 json_escape() {
-  # 转义 JSON 字符串中的特殊字符（反斜杠、双引号、控制符）
   printf '%s' "$1" | python3 -c 'import json,sys; sys.stdout.write(json.dumps(sys.stdin.read())[1:-1])' 2>/dev/null \
     || printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
-# 从 04_publish_queue.md 抓 draft media_id（优先匹配反引号包裹的值）
-MEDIA_ID="$(grep -oE 'media_id[^`]*`[A-Za-z0-9_-]{20,}`' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 | grep -oE '[A-Za-z0-9_-]{20,}' | head -1 || true)"
-if [ -z "${MEDIA_ID}" ]; then
-  MEDIA_ID="$(grep -oE '[A-Za-z0-9_-]{40,}' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 || true)"
+# 返回当天可用的归档目录（<日期>、<日期>-2、<日期>-3 …）
+next_dest() {
+  local d="${SKILL_DIR}/articles/${DATE}"
+  if [ ! -e "${d}" ]; then printf '%s' "${d}"; return; fi
+  local n=2
+  while [ -e "${SKILL_DIR}/articles/${DATE}-${n}" ]; do n=$((n+1)); done
+  printf '%s' "${SKILL_DIR}/articles/${DATE}-${n}"
+}
+
+# 建立 (article_md, cover, title, media_id) 四元组列表
+# 用 tab 分隔，逐行写入临时文件
+MANIFEST="${PIPELINE_DIR}/format/manifest.json"
+LIST_FILE="$(mktemp)"
+trap 'rm -f "${LIST_FILE}"' EXIT
+
+if [ -f "${MANIFEST}" ]; then
+  python3 - "$MANIFEST" "$PIPELINE_DIR" >> "${LIST_FILE}" <<'PY'
+import json, sys, os
+manifest, pdir = sys.argv[1], sys.argv[2]
+fmt = os.path.join(pdir, "format")
+try:
+    data = json.load(open(manifest, encoding="utf-8"))
+except Exception:
+    data = []
+if isinstance(data, dict):
+    data = data.get("articles", [])
+for i, it in enumerate(data, 1):
+    art = it.get("article") or f"article-{i}.md"
+    art = art if os.path.isabs(art) else os.path.join(fmt, art)
+    cov = it.get("cover") or f"imgs/cover-{i}.png"
+    cov = cov if os.path.isabs(cov) else os.path.join(fmt, cov)
+    title = (it.get("title") or "").replace("\t", " ").replace("\n", " ")
+    mid = (it.get("media_id") or "").replace("\t", " ").replace("\n", " ")
+    print(f"{art}\t{cov}\t{title}\t{mid}")
+PY
 fi
-[ -z "${TITLE}" ] && TITLE="$(grep -m1 '^# \|^title:' "${DEST}/article.md" 2>/dev/null | sed -E 's/^# //; s/^title:[[:space:]]*//' || true)"
-[ -z "${TITLE}" ] && TITLE="$DATE"
 
-TITLE_ESC="$(json_escape "${TITLE}")"
-MEDIA_ESC="$(json_escape "${MEDIA_ID}")"
+# 回退：扫描 article*.md
+if [ ! -s "${LIST_FILE}" ]; then
+  mapfile -t MARKS < <(find "${PIPELINE_DIR}/format" -maxdepth 1 -type f -name 'article*.md' 2>/dev/null | sort)
+  [ "${#MARKS[@]}" -eq 0 ] && mapfile -t MARKS < <(find "${PIPELINE_DIR}" -maxdepth 1 -type f -name 'article*.md' 2>/dev/null | sort)
+  for md in "${MARKS[@]}"; do
+    base="$(basename "${md}" .md)"
+    idx=""; [[ "${base}" =~ -([0-9]+)$ ]] && idx="${BASH_REMATCH[1]}"
+    cov=""
+    for c in "${PIPELINE_DIR}/format/imgs/cover-${idx}.png" "${PIPELINE_DIR}/format/imgs/cover.png" \
+             "${PIPELINE_DIR}/imgs/cover.png" "${PIPELINE_DIR}/cover.png"; do
+      [ -n "${c}" ] && [ -f "${c}" ] && { cov="${c}"; break; }
+    done
+    printf '%s\t%s\t\t\n' "${md}" "${cov}" >> "${LIST_FILE}"
+  done
+fi
 
-cat > "${DEST}/meta.json" <<EOF
+if [ ! -s "${LIST_FILE}" ]; then
+  echo "⚠️  未找到任何终稿 markdown（format/manifest.json 或 article*.md），跳过" >&2
+  exit 1
+fi
+
+TOTAL="$(grep -c '' "${LIST_FILE}")"
+echo "发现 ${TOTAL} 篇待归档文章"
+
+ARCHIVED=()
+TITLES=()
+
+while IFS=$'\t' read -r SRC_MD COVER TITLE MEDIA_ID; do
+  [ -z "${SRC_MD}" ] && continue
+
+  DEST="$(next_dest)"
+  mkdir -p "${DEST}/images"
+  REL_DEST="${DEST#${SKILL_DIR}/}"
+
+  # 正文
+  if [ -f "${SRC_MD}" ]; then
+    cp "${SRC_MD}" "${DEST}/article.md"
+  else
+    echo "   ⚠️  正文缺失: ${SRC_MD}" >&2
+    rmdir "${DEST}/images" "${DEST}" 2>/dev/null || true
+    continue
+  fi
+
+  # 封面
+  if [ -n "${COVER}" ] && [ -f "${COVER}" ]; then
+    cp "${COVER}" "${DEST}/cover.png"
+  else
+    for c in "${PIPELINE_DIR}/format/imgs/cover.png" "${PIPELINE_DIR}/imgs/cover.png" "${PIPELINE_DIR}/cover.png"; do
+      [ -f "${c}" ] && { cp "${c}" "${DEST}/cover.png"; break; }
+    done
+  fi
+
+  # 配图（排除封面）
+  if [ -d "${PIPELINE_DIR}/format/imgs" ]; then
+    find "${PIPELINE_DIR}/format/imgs" -type f \
+      \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
+      ! -iname 'cover*' -exec cp {} "${DEST}/images/" \; 2>/dev/null || true
+  fi
+
+  # 标题 & media_id
+  if [ -z "${TITLE}" ]; then
+    TITLE="$(grep -m1 '^# \|^title:' "${DEST}/article.md" 2>/dev/null | sed -E 's/^# //; s/^title:[[:space:]]*//' || true)"
+  fi
+  if [ -z "${TITLE}" ] && [ "${TOTAL}" = "1" ] && [ -n "${TITLE_OVERRIDE}" ]; then
+    TITLE="${TITLE_OVERRIDE}"
+  fi
+  [ -z "${TITLE}" ] && TITLE="${DATE}"
+
+  if [ -z "${MEDIA_ID}" ] && [ "${TOTAL}" = "1" ] && [ -f "${PIPELINE_DIR}/04_publish_queue.md" ]; then
+    MEDIA_ID="$(grep -oE 'media_id[^`]*`[A-Za-z0-9_-]{20,}`' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null \
+      | head -1 | grep -oE '[A-Za-z0-9_-]{20,}' | head -1 || true)"
+    [ -z "${MEDIA_ID}" ] && MEDIA_ID="$(grep -oE '[A-Za-z0-9_-]{40,}' "${PIPELINE_DIR}/04_publish_queue.md" 2>/dev/null | head -1 || true)"
+  fi
+
+  cat > "${DEST}/meta.json" <<EOF
 {
   "date": "${DATE}",
-  "title": "${TITLE_ESC}",
+  "title": "$(json_escape "${TITLE}")",
   "source_pipeline": "${PIPELINE_DIR}",
-  "media_id": "${MEDIA_ESC}",
+  "media_id": "$(json_escape "${MEDIA_ID}")",
   "archived_at": "$(date -Iseconds)",
   "files": {
     "article": "article.md",
@@ -95,23 +168,42 @@ cat > "${DEST}/meta.json" <<EOF
   }
 }
 EOF
-echo "✅ 元数据已生成: ${DEST}/meta.json"
+  echo "   ✅ 已归档: ${REL_DEST}  （${TITLE}）"
+  ARCHIVED+=("${REL_DEST}")
+  TITLES+=("${TITLE}")
+done < "${LIST_FILE}"
 
-# 5. 提交并推送
+if [ "${#ARCHIVED[@]}" -eq 0 ]; then
+  echo "⚠️  没有成功归档的文章" >&2
+  exit 1
+fi
+
+# 提交并推送
 cd "${SKILL_DIR}"
-REL_DEST="${DEST#${SKILL_DIR}/}"
-git add "${REL_DEST}" >/dev/null 2>&1 || true
+for d in "${ARCHIVED[@]}"; do git add "${d}" >/dev/null 2>&1 || true; done
 if git diff --cached --quiet; then
   echo "ℹ️  无变更需提交（可能已归档过）"
 else
-  git commit -m "article: ${TITLE:-$DATE} (${DATE})" >/dev/null
-  echo "✅ 已提交: article: ${TITLE:-$DATE} (${DATE})"
+  if [ "${#ARCHIVED[@]}" -eq 1 ]; then
+    MSG="article: ${TITLES[0]} (${DATE})"
+  else
+    MSG="archive ${DATE}: ${#ARCHIVED[@]} 篇（${TITLES[0]} 等）"
+  fi
+  git commit -m "${MSG}" >/dev/null && echo "✅ 已提交: ${MSG}"
 fi
 
-if git push "${REPO_REMOTE}" "${BRANCH}" 2>/dev/null; then
-  echo "✅ 已推送到 GitHub (${REPO_REMOTE}/${BRANCH})"
-else
-  echo "⚠️  GitHub 推送失败（网络/认证）。文章已本地归档，稍后重试。"
+PUSH_OK=0
+for attempt in 1 2 3; do
+  if GIT_TERMINAL_PROMPT=0 git -c http.lowSpeedLimit=100 -c http.lowSpeedTime=60 -c http.connectTimeout=30 \
+       push "${REPO_REMOTE}" "${BRANCH}" 2>/dev/null; then
+    echo "✅ 已推送到 GitHub (${REPO_REMOTE}/${BRANCH})"; PUSH_OK=1; break
+  fi
+  echo "   ⚠️  推送尝试 ${attempt} 失败" >&2
+  [ "${attempt}" -lt 3 ] && sleep 5
+done
+
+if [ "${PUSH_OK}" = "0" ]; then
+  echo "⚠️  GitHub 推送失败（网络/认证）。文章已本地归档，稍后重试。" >&2
   exit 2
 fi
 

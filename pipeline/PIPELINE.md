@@ -2,9 +2,11 @@
 
 ## 概述
 
-RSI（Recursive Self-Improvement，递归自改进）微信公众号内容流水线，每天 07:20 自动执行四步流水线，产出 1 篇爆款长文，并同步归档到 GitHub。核心：AI 参与改进自身内容研发，形成「能力越强→内容越好→能力更强」的反馈回路。
+RSI（Recursive Self-Improvement，递归自改进）微信公众号内容流水线，每天 07:20 自动执行五步流水线，产出 **3 篇**爆款长文（角度互不重复），全部推送草稿箱供人工选择群发，并同步归档到 GitHub。核心：AI 参与改进自身内容研发，形成「能力越强→内容越好→能力更强」的反馈回路。
 
-## 四步流水线
+## 五步流水线
+
+每天跑 3 轮，3 篇角度/素材互不重复（建议「认知层/商业层/心智层」三翼）。产物按篇分目录：`<日期>/p1/`、`p2/`、`p3/`。
 
 ```
 topic（选题）
@@ -19,23 +21,29 @@ topic（选题）
 已推送公众号草稿箱的文章，必须同步归档到 GitHub `kenyanghui/rsi-wechat`，便于后续处理：
 
 ```
-articles/<YYYY-MM-DD>/
+articles/<YYYY-MM-DD>/       # 第 1 篇
+articles/<YYYY-MM-DD>-2/     # 第 2 篇（同日多篇自动编号）
+articles/<YYYY-MM-DD>-3/     # 第 3 篇
 ├── article.md      # 正文
 ├── meta.json       # 元数据（含 media_id）
 ├── cover.png       # 封面
 └── images/         # 配图
 ```
 
-调用 `scripts/archive_article.sh <日期> <产物目录>` 完成收集 → commit → push。
+调用 `scripts/archive_article.sh <日期> <产物目录>` 完成收集 → commit → push（支持同日多篇，优先读 `format/manifest.json`，内置推送重试）。
 
 ## 产物目录
 
 ```
 /root/agents/shared/pipeline/<YYYY-MM-DD>/
-├── 01_topics.md      # 选题 brief（含风格卡、源清单）
-├── 02_drafts.json    # 草稿
-├── 03_qa_scores.md   # 质检打分
-├── 04_publish_queue.md # 待发布队列
+├── p1/               # 第1篇
+│   ├── 01_topics.md      # 选题 brief（含风格卡、源清单）
+│   ├── 02_drafts.json    # 草稿
+│   ├── 03_qa_scores.md   # 质检打分
+│   ├── 04_publish_queue.md # 待发布队列
+│   └── format/           # 终稿 + 封面 + manifest.json
+├── p2/               # 第2篇（结构同上）
+├── p3/               # 第3篇（结构同上）
 ├── _run.log          # 执行日志
 └── _status.json      # 执行状态
 ```

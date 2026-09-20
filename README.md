@@ -6,24 +6,29 @@ OpenClaw 多 agent 自动内容流水线，从 IMA 知识库挖素材，全自�
 
 ## 功能
 
-- **一句话触发**：对 assistant 说「跑流水线」即可执行完整四步（+归档）
-- **定时执行**：每天 07:20 自动运行，产出 1 篇爆款
-- **四步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）
-- **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>/`），便于后续处理
+- **一句话触发**：对 assistant 说「跑流水线」即可执行完整五步（含归档）
+- **定时执行**：每天 07:20 自动运行，产出 **3 篇**爆款（角度互不重复）
+- **五步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）→ archive 归档
+- **人工闸门**：3 篇全部进草稿箱，由杨辉老师人工选择群发
+- **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>[-n]/`），便于后续处理
 - **RSI 自进化**：每轮回收进化台账，内容质量逐轮递增
 
-## 四步流水线
+## 五步流水线
 
 ```
 topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub）
 ```
+
+> 每天跑 3 轮，产物分放 `<日期>/p1/`、`p2/`、`p3/`。
 
 ## 文章归档（GitHub）
 
 已推送到公众号草稿箱的文章，会自动同步到本仓库，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
 
 ```
-articles/<YYYY-MM-DD>/
+articles/<YYYY-MM-DD>/       # 第 1 篇
+articles/<YYYY-MM-DD>-2/     # 第 2 篇（同日多篇自动编号）
+articles/<YYYY-MM-DD>-3/     # 第 3 篇
 ├── article.md      # 正文终稿
 ├── meta.json       # 元数据（标题/摘要/作者/质检分/media_id/源）
 ├── cover.png       # 封面图
@@ -31,6 +36,7 @@ articles/<YYYY-MM-DD>/
 ```
 
 归档脚本：`scripts/archive_article.sh <日期> <产物目录>`
+（支持同日多篇：优先读 `format/manifest.json`，自动编号 `-2/-3`，内置推送重试）
 
 ## 整合的 9 个 baoyu skill
 
@@ -85,11 +91,12 @@ rsi-wechat/
 │   └── SOURCE-LEDGER.md          # 选题台账
 ├── references/
 │   └── pipeline.md               # 四步流水线详细编排（含 baoyu 嵌入点）
-├── templates/                    # 4 个产物模板
+├── templates/                    # 产物模板
 │   ├── 01_topics.md
 │   ├── 02_drafts.json
 │   ├── 03_qa_scores.md
-│   └── 04_publish_queue.md
+│   ├── 04_publish_queue.md
+│   └── format/manifest.json      # 同日多篇归档清单
 └── scripts/
     ├── setup.sh                  # 一键部署脚本
     ├── run_pipeline.sh           # 手动编排入口

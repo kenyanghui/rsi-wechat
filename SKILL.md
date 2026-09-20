@@ -1,7 +1,7 @@
 ---
 name: rsi-wechat
-description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天一篇爆款", "文章归档", "RSI 自进化".
-version: 1.0.0
+description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化".
+version: 1.1.0
 metadata:
   openclaw:
     homepage: https://github.com/kenyanghui/rsi-wechat
@@ -79,6 +79,8 @@ topic（选题） → writer（写作） → qa（质检） → format（排版�
 | 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、推草稿箱 |
 | 归档 | 主控 | `04_publish_queue.md` + format 产物 | `articles/<日期>/` + GitHub | **同步文章到 GitHub，便于后续处理** |
 
+> **每天产出 3 篇**：每天跑 3 轮上述流水线（角度/素材互不重复），3 篇全部推送草稿箱，由杨辉老师人工选择群发。产物分别放 `<日期>/p1/`、`<日期>/p2/`、`<日期>/p3/`。归档脚本支持同日多篇（自动编号 `articles/<日期>/`、`-2/`、`-3/`）。
+
 ## 文章归档到 GitHub（每次发布后必做）
 
 > 目的：把每一篇已推送到公众号草稿箱的文章，同步归档到 GitHub 仓库 `kenyanghui/rsi-wechat`，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
@@ -87,21 +89,24 @@ topic（选题） → writer（写作） → qa（质检） → format（排版�
 
 **归档内容**（每篇）：
 ```
-articles/<YYYY-MM-DD>/
+articles/<YYYY-MM-DD>/       # 第 1 篇
+articles/<YYYY-MM-DD>-2/     # 第 2 篇（同日多篇自动编号）
+articles/<YYYY-MM-DD>-3/     # 第 3 篇
 ├── article.md      # 正文（Markdown 终稿）
 ├── meta.json       # 元数据：标题/摘要/作者/质检分/media_id/封面/标签/源
 ├── cover.png       # 封面图
 └── images/         # 正文配图（如有）
 ```
 
-**执行方式**：调用 `scripts/archive_article.sh <日期> <产物目录>`，脚本负责：
-1. 从产物目录收集终稿与图片，写入 `articles/<日期>/`。
-2. 生成 `meta.json`（含公众号 media_id，便于回溯）。
-3. `git add` → `git commit -m "article: <标题> (<日期>)"` → `git push`。
+**执行方式**：调用 `scripts/archive_article.sh <日期> <产物目录>`，脚本支持同一天多篇：
+1. 读取 `<产物目录>/format/manifest.json`（推荐，format 环节产出多篇清单），或回退扫描 `article*.md`。
+2. 逐篇写入 `articles/<日期>/`、`-2/`、`-3/`（自动编号，绝不覆盖）。
+3. 生成每篇 `meta.json`（含公众号 media_id，便于回溯）。
+4. 一次性 `git add` → `git commit` → `git push`。
 
 **纪律**：
 - 只归档**已进草稿箱**的文章，未过审（<80 分）不归档。
-- 每天至少一次 commit，保持一天一篇的可追溯节奏。
+- 每天至少一次 commit，保持一天 3 篇的可追溯节奏。
 - 归档失败不阻断主流程，但必须向用户告警并记录到 `_rsi_ledger.md`。
 
 ---
@@ -169,7 +174,7 @@ openclaw cron run <cron-job-id>
 ## 默认配置
 
 - **素材库**：IMA 知识库「AI量化杨老师」，kb_id `5JU-YyL5WUdMp3ZzS_7M2B6G5XpOB4ofM2rdKkMr3jY=`
-- **频率**：每天 07:20 一篇爆款（cron `20 7 * * *`，Asia/Shanghai）
+- **频率**：每天 07:20 产出 **3 篇**爆款（cron `20 7 * * *`，Asia/Shanghai），全部进草稿箱供人工选择群发
 - **发布方式**：`baoyu-post-to-wechat` API 方式
 - **文章归档**：每次发布后同步到 GitHub `kenyanghui/rsi-wechat`（`articles/<日期>/`）
 - **主题/颜色**：`default` / `blue`
