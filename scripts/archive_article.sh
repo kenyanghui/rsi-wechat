@@ -22,9 +22,19 @@
 set -uo pipefail
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DATE="${1:-$(date +%Y-%m-%d)}"
-PIPELINE_DIR="${2:-/root/agents/shared/pipeline/${DATE}}"
-TITLE_OVERRIDE="${3:-}"
+
+# 参数解析：支持 --dry-run（只演练不写不推）
+DRY_RUN=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --dry-run|-n) DRY_RUN=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+DATE="${ARGS[0]:-$(date +%Y-%m-%d)}"
+PIPELINE_DIR="${ARGS[1]:-/root/agents/shared/pipeline/${DATE}}"
+TITLE_OVERRIDE="${ARGS[2]:-}"
 
 REPO_REMOTE="origin"
 # 远端规范分支（本地分支名可能不同，如本地 master → 远端 main）
@@ -83,14 +93,24 @@ PY
 fi
 
 # 回退：扫描 article*.md
+# 支持两种布局：单篇 <DIR>/format/article.md；多篇 <DIR>/p1|p2|p3/format/article.md
 if [ ! -s "${LIST_FILE}" ]; then
-  mapfile -t MARKS < <(find "${PIPELINE_DIR}/format" -maxdepth 1 -type f -name 'article*.md' 2>/dev/null | sort)
+  mapfile -t MARKS < <(
+    find "${PIPELINE_DIR}"/p*/format -maxdepth 1 -type f -name 'article*.md' 2>/dev/null \
+    | sort
+  )
+  if [ "${#MARKS[@]}" -eq 0 ]; then
+    mapfile -t MARKS < <(find "${PIPELINE_DIR}/format" -maxdepth 1 -type f -name 'article*.md' 2>/dev/null | sort)
+  fi
   [ "${#MARKS[@]}" -eq 0 ] && mapfile -t MARKS < <(find "${PIPELINE_DIR}" -maxdepth 1 -type f -name 'article*.md' 2>/dev/null | sort)
   for md in "${MARKS[@]}"; do
     base="$(basename "${md}" .md)"
+    dir="$(dirname "${md}")"
     idx=""; [[ "${base}" =~ -([0-9]+)$ ]] && idx="${BASH_REMATCH[1]}"
     cov=""
-    for c in "${PIPELINE_DIR}/format/imgs/cover-${idx}.png" "${PIPELINE_DIR}/format/imgs/cover.png" \
+    # 优先同目录封面，其次上级 imgs/
+    for c in "${dir}/imgs/cover-${idx}.png" "${dir}/imgs/cover.png" \
+             "${dir}/../imgs/cover-${idx}.png" "${dir}/../imgs/cover.png" \
              "${PIPELINE_DIR}/imgs/cover.png" "${PIPELINE_DIR}/cover.png"; do
       [ -n "${c}" ] && [ -f "${c}" ] && { cov="${c}"; break; }
     done
@@ -105,6 +125,18 @@ fi
 
 TOTAL="$(grep -c '' "${LIST_FILE}")"
 echo "发现 ${TOTAL} 篇待归档文章"
+if [ "${DRY_RUN}" = "1" ]; then
+  echo "--- [dry-run] 计划归档如下（不写入、不提交、不推送）---"
+  n=1
+  while IFS=$'\t' read -r SRC_MD COVER TITLE MEDIA_ID; do
+    [ -z "${SRC_MD}" ] && continue
+    printf '  [%d] 正文: %s\n      封面: %s\n      标题: %s\n      media_id: %s\n' \
+      "${n}" "${SRC_MD}" "${COVER:-<无>}" "${TITLE:-<自动推断>}" "${MEDIA_ID:-<无>}"
+    n=$((n+1))
+  done < "${LIST_FILE}"
+  echo "=== [dry-run] 结束（未做任何变更）==="
+  exit 0
+fi
 
 ARCHIVED=()
 TITLES=()
@@ -134,9 +166,11 @@ while IFS=$'\t' read -r SRC_MD COVER TITLE MEDIA_ID; do
     done
   fi
 
-  # 配图（排除封面）
-  if [ -d "${PIPELINE_DIR}/format/imgs" ]; then
-    find "${PIPELINE_DIR}/format/imgs" -type f \
+  # 配图（排除封面）：扫描所在 format 目录的 imgs/
+  IMG_SRC="$(dirname "${SRC_MD}")/imgs"
+  [ -d "${IMG_SRC}" ] || IMG_SRC="${PIPELINE_DIR}/format/imgs"
+  if [ -d "${IMG_SRC}" ]; then
+    find "${IMG_SRC}" -type f \
       \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
       ! -iname 'cover*' -exec cp {} "${DEST}/images/" \; 2>/dev/null || true
   fi
