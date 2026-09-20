@@ -6,17 +6,17 @@ OpenClaw 多 agent 自动内容流水线，从 IMA 知识库挖素材，全自�
 
 ## 功能
 
-- **一句话触发**：对 assistant 说「跑流水线」即可执行完整五步（含归档）
+- **一句话触发**：对 assistant 说「跑流水线」即可执行完整六步（含 GitHub 归档 + IMA 同步）
 - **定时执行**：每天 07:20 自动运行，产出 **3 篇**爆款（角度互不重复）
-- **五步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）→ archive 归档
+- **六步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）→ archive 归档 GitHub → sync-ima 同步 IMA 知识库
 - **人工闸门**：3 篇全部进草稿箱，由杨辉老师人工选择群发
-- **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>[-n]/`），便于后续处理
+- **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>[-n]/`），并同步进 IMA 知识库「4.AI生产文章」，便于后续处理
 - **RSI 自进化**：每轮回收进化台账，内容质量逐轮递增
 
-## 五步流水线
+## 六步流水线
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub）
+topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub） → sync-ima（同步 IMA）
 ```
 
 > 每天跑 3 轮，产物分放 `<日期>/p1/`、`p2/`、`p3/`。
@@ -37,6 +37,13 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 
 归档脚本：`scripts/archive_article.sh <日期> <产物目录>`
 （支持同日多篇：优先读 `format/manifest.json`，自动编号 `-2/-3`，内置推送重试）
+
+## 文章同步（IMA 知识库）
+
+已进草稿箱的文章还会同步归档到 IMA 知识库「AI量化杨老师」的 **「4.AI生产文章」** 文件夹，沉淀为可检索的知识资产。
+
+同步脚本：`scripts/sync_to_ima.sh <日期> [产物目录] [--dry-run]`
+（以 Markdown 逐篇上传；自动去重；同步失败不阻断主流程）
 
 ## 整合的 9 个 baoyu skill
 

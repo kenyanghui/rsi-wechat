@@ -55,17 +55,18 @@ rsi-wechat/
 │   └── 04_publish_queue.md   # 待发布队列模板
 └── scripts/
     ├── run_pipeline.sh       # 一键编排入口（可选，用于手动触发）
-    └── archive_article.sh    # 文章归档到 GitHub（format 环节调用）
+    ├── archive_article.sh    # 文章归档到 GitHub（主控执行）
+    └── sync_to_ima.sh        # 文章同步到 IMA 知识库「4.AI生产文章」（主控执行）
 ```
 
-## 五步流水线（核心流程）
+## 六步流水线（核心流程）
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub）
+topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub） → sync-ima（同步 IMA 知识库）
 ```
 
 - 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
-- 第五步 `archive` 由**主控**执行（无需单独 agent）：把本轮已发文章同步到 GitHub。
+- 第五、六步由**主控**执行（无需单独 agent）：把本轮已发文章同步到 GitHub，再同步到 IMA 知识库「4.AI生产文章」。
 
 详细编排见 `references/pipeline.md`。
 
@@ -78,6 +79,7 @@ topic（选题） → writer（写作） → qa（质检） → format（排版�
 | 质检 | qa | `02_drafts.json` | `03_qa_scores.md` | 打分评级、合规一票否决 |
 | 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、推草稿箱 |
 | 归档 | 主控 | `04_publish_queue.md` + format 产物 | `articles/<日期>/` + GitHub | **同步文章到 GitHub，便于后续处理** |
+| 同步 IMA | 主控 | `articles/<日期>/` 或 pipeline 产物 | IMA「4.AI生产文章」 | **把文章同步进 IMA 知识库归档** |
 
 > **每天产出 3 篇**：每天跑 3 轮上述流水线（角度/素材互不重复），3 篇全部推送草稿箱，由杨辉老师人工选择群发。产物分别放 `<日期>/p1/`、`<日期>/p2/`、`<日期>/p3/`。归档脚本支持同日多篇（自动编号 `articles/<日期>/`、`-2/`、`-3/`）。
 
@@ -108,6 +110,23 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 - 只归档**已进草稿箱**的文章，未过审（<80 分）不归档。
 - 每天至少一次 commit，保持一天 3 篇的可追溯节奏。
 - 归档失败不阻断主流程，但必须向用户告警并记录到 `_rsi_ledger.md`。
+
+## 文章同步到 IMA 知识库（每次发布后必做）
+
+> 目的：把每一篇已推送到公众号草稿箱的文章，同步归档到 IMA 知识库「AI量化杨老师」的 **「4.AI生产文章」** 文件夹（`folder_7507449254775045`），沉淀为可检索的知识资产。
+
+**同步时机**：GitHub 归档（第五步 archive）之后，由主控执行。
+
+**执行方式**：调用 `scripts/sync_to_ima.sh <日期> [产物目录] [--dry-run]`：
+1. 从 pipeline 产物的 `manifest.json` 或 `articles/<日期>*` 归档目录收集文章清单（自动去重）。
+2. 生成规范 Markdown（标题 + 作者/来源/归档日期 + 摘要 + 正文）。
+3. 以 `media_type=7`（Markdown）逐篇上传到 IMA 文件夹（`create_media` → COS 上传 → `add_knowledge`）。
+
+**纪律**：
+- 只同步**已进草稿箱**的文章；Markdown 单个文件 ≤ 10MB。
+- 上传前做重名检查；重名不支持替换（改为加时间戳后缀）。
+- IMA 同步失败不阻断主流程（凭证缺失直接跳过），但需向用户告警并记入台账。
+- 关键参数：`IMA_KB_ID`、`IMA_FOLDER_ID` 可用环境变量覆盖。
 
 ---
 
