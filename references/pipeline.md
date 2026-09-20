@@ -1,6 +1,6 @@
-# 四步流水线详细编排（rsi-wechat）
+# 五步流水线详细编排（rsi-wechat）
 
-> 本文件描述 `topic → writer → qa → format` 四步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
+> 本文件描述 `topic → writer → qa → format → archive` 五步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
 
 ## 编排总览
 
@@ -12,7 +12,8 @@
   ├── Step 2：spawn writer → 02_drafts.json（写作）
   ├── Step 3：spawn qa     → 03_qa_scores.md（质检）
   ├── Step 4：spawn format → 04_publish_queue.md + 草稿箱（排版发文）
-  └── Step 5：回写 RSI 台账 + 简报
+  ├── Step 5：archive（主控执行）→ articles/<日期>/ + GitHub 同步
+  └── Step 6：回写 RSI 台账 + 简报
 ```
 
 ## Step 0：预热（主控执行）
@@ -84,7 +85,21 @@
 
 **红线**：绝不使用 `--submit`，到人工闸门即停。
 
-## Step 5：回写台账 + 简报（主控执行）
+## Step 5：archive 归档到 GitHub（主控执行）⭐ 便于后续处理
+
+**目的**：把已推送到公众号草稿箱的文章，同步归档到 GitHub `kenyanghui/rsi-wechat`，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
+
+**动作**：
+1. 读 `04_publish_queue.md`，只归档**已进草稿箱**的条目（带 media_id）。
+2. 调用 `scripts/archive_article.sh <日期> <产物目录>`：
+   - 收集 `format/article.md`、封面、配图 → 写入 `articles/<日期>/`。
+   - 生成 `meta.json`（标题/摘要/作者/质检分/media_id/封面/标签/源）。
+   - `git add` → `git commit -m "article: <标题> (<日期>)"` → `git push`。
+3. 若 push 失败（网络/认证），不阻断主流程，记录到 `_rsi_ledger.md` 并向用户告警。
+
+**验收**：GitHub 仓库出现当日 commit，`articles/<日期>/` 含 article.md + meta.json。
+
+## Step 6：回写台账 + 简报（主控执行）
 
 1. 更新 RSI 进化台账 `_rsi_ledger.md`：
    - 素材避重表追加本轮新源。

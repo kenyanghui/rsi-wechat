@@ -6,16 +6,31 @@ OpenClaw 多 agent 自动内容流水线，从 IMA 知识库挖素材，全自�
 
 ## 功能
 
-- **一句话触发**：对 assistant 说「跑流水线」即可执行完整四步
+- **一句话触发**：对 assistant 说「跑流水线」即可执行完整四步（+归档）
 - **定时执行**：每天 07:20 自动运行，产出 1 篇爆款
 - **四步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）
+- **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>/`），便于后续处理
 - **RSI 自进化**：每轮回收进化台账，内容质量逐轮递增
 
 ## 四步流水线
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文）
+topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub）
 ```
+
+## 文章归档（GitHub）
+
+已推送到公众号草稿箱的文章，会自动同步到本仓库，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
+
+```
+articles/<YYYY-MM-DD>/
+├── article.md      # 正文终稿
+├── meta.json       # 元数据（标题/摘要/作者/质检分/media_id/源）
+├── cover.png       # 封面图
+└── images/         # 正文配图
+```
+
+归档脚本：`scripts/archive_article.sh <日期> <产物目录>`
 
 ## 整合的 9 个 baoyu skill
 
@@ -61,6 +76,8 @@ rsi-wechat/
 ├── SKILL.md                      # Skill 定义（主入口）
 ├── README.md                     # 本文件
 ├── _rsi_ledger.md                # RSI 进化台账（自进化核心）
+├── articles/                     # 📦 已发布文章归档（同步到 GitHub）
+│   └── <YYYY-MM-DD>/             # article.md + meta.json + cover.png
 ├── config/
 │   └── openclaw.json             # OpenClaw 配置模板
 ├── pipeline/
@@ -75,7 +92,8 @@ rsi-wechat/
 │   └── 04_publish_queue.md
 └── scripts/
     ├── setup.sh                  # 一键部署脚本
-    └── run_pipeline.sh           # 手动编排入口
+    ├── run_pipeline.sh           # 手动编排入口
+    └── archive_article.sh        # 文章归档到 GitHub
 ```
 
 ## 产物
@@ -87,7 +105,7 @@ rsi-wechat/
 | `01_topics.md` | 选题 brief（含源清单） |
 | `02_drafts.json` | 草稿全文 |
 | `03_qa_scores.md` | 质检打分 |
-| `04_publish_queue.md` | 待发布队列 |
+| `04_publish_queue.md` | 待发布队列（含归档状态） |
 
 ## RSI 自进化机制
 

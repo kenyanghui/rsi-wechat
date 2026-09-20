@@ -2,7 +2,7 @@
 
 ## 概述
 
-RSI（Recursive Self-Improvement，递归自改进）微信公众号内容流水线，每天 07:20 自动执行四步流水线，产出 1 篇爆款长文。核心：AI 参与改进自身内容研发，形成「能力越强→内容越好→能力更强」的反馈回路。
+RSI（Recursive Self-Improvement，递归自改进）微信公众号内容流水线，每天 07:20 自动执行四步流水线，产出 1 篇爆款长文，并同步归档到 GitHub。核心：AI 参与改进自身内容研发，形成「能力越强→内容越好→能力更强」的反馈回路。
 
 ## 四步流水线
 
@@ -11,7 +11,22 @@ topic（选题）
   → writer（写作）
     → qa（质检）
       → format（排版推送）
+        → archive（同步 GitHub）
 ```
+
+### 文章归档（archive，每次发布后必做）
+
+已推送公众号草稿箱的文章，必须同步归档到 GitHub `kenyanghui/rsi-wechat`，便于后续处理：
+
+```
+articles/<YYYY-MM-DD>/
+├── article.md      # 正文
+├── meta.json       # 元数据（含 media_id）
+├── cover.png       # 封面
+└── images/         # 配图
+```
+
+调用 `scripts/archive_article.sh <日期> <产物目录>` 完成收集 → commit → push。
 
 ## 产物目录
 

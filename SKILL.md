@@ -1,6 +1,6 @@
 ---
 name: rsi-wechat
-description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线与 9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天一篇爆款", "RSI 自进化".
+description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天一篇爆款", "文章归档", "RSI 自进化".
 version: 1.0.0
 metadata:
   openclaw:
@@ -44,24 +44,30 @@ metadata:
 rsi-wechat/
 ├── SKILL.md                  # 本文件（主入口）
 ├── _rsi_ledger.md            # RSI 进化台账（换源避重 + 风格偏好 + 金句库 + 修正记录）
+├── articles/                 # 📦 已发布文章归档（同步到 GitHub，便于后续处理）
+│   └── <YYYY-MM-DD>/         # 每天一篇：article.md + meta.json + cover.png
 ├── references/
-│   └── pipeline.md           # 四步流水线详细编排（topic→writer→qa→format）
+│   └── pipeline.md           # 四步流水线详细编排（topic→writer→qa→format→archive）
 ├── templates/
 │   ├── 01_topics.md          # 选题 Brief 模板
 │   ├── 02_drafts.json        # 草稿 JSON 模板
 │   ├── 03_qa_scores.md       # 质检评分模板
 │   └── 04_publish_queue.md   # 待发布队列模板
 └── scripts/
-    └── run_pipeline.sh       # 一键编排入口（可选，用于手动触发）
+    ├── run_pipeline.sh       # 一键编排入口（可选，用于手动触发）
+    └── archive_article.sh    # 文章归档到 GitHub（format 环节调用）
 ```
 
-## 四步流水线（核心流程）
+## 五步流水线（核心流程）
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文）
+topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub）
 ```
 
-每个环节都是一个独立的 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。详细编排见 `references/pipeline.md`。
+- 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
+- 第五步 `archive` 由**主控**执行（无需单独 agent）：把本轮已发文章同步到 GitHub。
+
+详细编排见 `references/pipeline.md`。
 
 ### 各环节职责速览
 
@@ -71,8 +77,34 @@ topic（选题） → writer（写作） → qa（质检） → format（排版�
 | 写作 | writer | `01_topics.md` | `02_drafts.json` | 写完整长文（付费段不占位） |
 | 质检 | qa | `02_drafts.json` | `03_qa_scores.md` | 打分评级、合规一票否决 |
 | 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、推草稿箱 |
+| 归档 | 主控 | `04_publish_queue.md` + format 产物 | `articles/<日期>/` + GitHub | **同步文章到 GitHub，便于后续处理** |
 
-## 整合的 9 个 baoyu Skill（必须用好）
+## 文章归档到 GitHub（每次发布后必做）
+
+> 目的：把每一篇已推送到公众号草稿箱的文章，同步归档到 GitHub 仓库 `kenyanghui/rsi-wechat`，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
+
+**归档时机**：format 环节产出 `04_publish_queue.md` 之后，由主控执行。
+
+**归档内容**（每篇）：
+```
+articles/<YYYY-MM-DD>/
+├── article.md      # 正文（Markdown 终稿）
+├── meta.json       # 元数据：标题/摘要/作者/质检分/media_id/封面/标签/源
+├── cover.png       # 封面图
+└── images/         # 正文配图（如有）
+```
+
+**执行方式**：调用 `scripts/archive_article.sh <日期> <产物目录>`，脚本负责：
+1. 从产物目录收集终稿与图片，写入 `articles/<日期>/`。
+2. 生成 `meta.json`（含公众号 media_id，便于回溯）。
+3. `git add` → `git commit -m "article: <标题> (<日期>)"` → `git push`。
+
+**纪律**：
+- 只归档**已进草稿箱**的文章，未过审（<80 分）不归档。
+- 每天至少一次 commit，保持一天一篇的可追溯节奏。
+- 归档失败不阻断主流程，但必须向用户告警并记录到 `_rsi_ledger.md`。
+
+---
 
 这是本 skill 的核心增值点——把散装的 baoyu 能力，按流水线环节精准嵌入，做到「该出图时出图、该压缩时压缩、该发文时发文」。
 
@@ -137,17 +169,18 @@ openclaw cron run <cron-job-id>
 ## 默认配置
 
 - **素材库**：IMA 知识库「AI量化杨老师」，kb_id `5JU-YyL5WUdMp3ZzS_7M2B6G5XpOB4ofM2rdKkMr3jY=`
+- **频率**：每天 07:20 一篇爆款（cron `20 7 * * *`，Asia/Shanghai）
 - **发布方式**：`baoyu-post-to-wechat` API 方式
+- **文章归档**：每次发布后同步到 GitHub `kenyanghui/rsi-wechat`（`articles/<日期>/`）
 - **主题/颜色**：`default` / `blue`
 - **作者**：`杨教练`
-- **频率**：每天 07:20 一篇爆款（cron `20 7 * * *`）
 - **安全红线**：只进草稿箱，绝不自动群发；投资内容必含风险提示
 
 ## 详细参考
 
 | 主题 | 文件 |
 |------|------|
-| 四步流水线详细编排 | `references/pipeline.md` |
+| 五步流水线（+归档）详细编排 | `references/pipeline.md` |
 | 选题 Brief 模板 | `templates/01_topics.md` |
 | 草稿 JSON 模板 | `templates/02_drafts.json` |
 | 质检评分模板 | `templates/03_qa_scores.md` |
