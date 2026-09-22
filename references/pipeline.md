@@ -88,10 +88,11 @@
 4. **生成文章插图**（`baoyu-article-illustrator`）：读 SKILL.md，分析正文结构，在关键段落定位插图，生成配图。
 5. **图片压缩**（`baoyu-compress-image`）：所有配图转 WebP 并压缩到目标体积。
 6. **Markdown 转 HTML**（`baoyu-markdown-to-html`）：正文转微信兼容 HTML，套用 theme `default` / color `blue`。
-7. **推公众号草稿箱**（`baoyu-post-to-wechat`）：API 方式，保存草稿，**绝不群发**。
-8. 写 `04_publish_queue.md`（含 media_id、封面是否需要人工补）。
+7. **注入文末获客 CTA**（⭐ 获客闭环关键步）：读 `templates/format/cta.md`，在正文「风险提示」之后、文章最末尾注入「企微二维码 + 双诱饵」组件。占位符 `{{WECOM_QR_IMAGE}}` 优先取 `config/wecom-qr.png`（随配图走压缩），缺失则以文字「微信搜索：AI量化杨教练」兜底并标记待补。
+8. **推公众号草稿箱**（`baoyu-post-to-wechat`）：API 方式，保存草稿，**绝不群发**。
+9. 写 `04_publish_queue.md`（含 media_id、封面/二维码是否需人工补、CTA 注入校验）。
 
-**验收**：草稿已进草稿箱，拿到 media_id，`04_publish_queue.md` 已写。
+**验收**：草稿已进草稿箱，拿到 media_id；正文末含「添加后回复对应数字」+ 三个诱饵；`04_publish_queue.md` 已写。
 
 **红线**：绝不使用 `--submit`，到人工闸门即停。
 

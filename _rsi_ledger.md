@@ -50,3 +50,4 @@
 | 2026-09-20 | 归档脚本支持同日多篇 | 重写 archive_article.sh：读 format/manifest.json 多篇清单，自动编号 `articles/<日期>/-2/-3`，内置 3 次推送重试 | 需求改为「每天 3 篇入草稿箱」 |
 | 2026-09-20 | 修归档脚本分支 bug | `git push origin <branch>` 因本地分支为 master、远端规范为 main，误推创建野分支 master；改为 `git push origin <local>:main`（BRANCH 可用 RSI_REMOTE_BRANCH 覆盖） | 验证轮归档时远端 main 未更新、多出野分支 master |
 | 2026-09-20 | 流程由「每天 1 篇」改「每天 3 篇」 | cron + SKILL.md + pipeline.md + PIPELINE.md + README + templates 全链同步；3 篇全部进草稿箱供人工选择群发 | 用户要求：改成每天三篇入草稿箱，由人工选择发 |
+| 2026-09-20 | 新增 sync-ima 环节 | 流水线五步 → 六步（+sync-ima），新增 `scripts/sync_to_ima.sh`：把已发文章以 Markdown（media_type=7）同步进 IMA 知识库「AI量化杨老师」的「4.AI生产文章」文件夹（folder_7507449254775045） | 用户要求：生产出的文章再同步加入 IMA 知识库归档 |

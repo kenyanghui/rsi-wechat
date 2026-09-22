@@ -53,6 +53,9 @@ rsi-wechat/
 │   ├── 02_drafts.json        # 草稿 JSON 模板
 │   ├── 03_qa_scores.md       # 质检评分模板
 │   └── 04_publish_queue.md   # 待发布队列模板
+│   └── format/
+│       ├── manifest.json     # format 多篇清单
+│       └── cta.md            # 文末获客 CTA 组件（企微承接 + 双诱饵）
 └── scripts/
     ├── run_pipeline.sh       # 一键编排入口（可选，用于手动触发）
     ├── archive_article.sh    # 文章归档到 GitHub（主控执行）
@@ -77,7 +80,7 @@ topic（选题） → writer（写作） → qa（质检） → format（排版�
 | 选题 | topic | IMA 知识库 + RSI 台账 | `01_topics.md` | 挖素材、查重、定爆款选题 |
 | 写作 | writer | `01_topics.md` | `02_drafts.json` | 写完整长文（付费段不占位） |
 | 质检 | qa | `02_drafts.json` | `03_qa_scores.md` | 打分评级、合规一票否决 |
-| 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、推草稿箱 |
+| 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、**注入文末获客 CTA**、推草稿箱 |
 | 归档 | 主控 | `04_publish_queue.md` + format 产物 | `articles/<日期>/` + GitHub | **同步文章到 GitHub，便于后续处理** |
 | 同步 IMA | 主控 | `articles/<日期>/` 或 pipeline 产物 | IMA「4.AI生产文章」 | **把文章同步进 IMA 知识库归档** |
 
@@ -140,6 +143,7 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 | `baoyu-markdown-to-html` | Markdown 转 HTML | **format 环节**：正文转微信兼容 HTML（含主题样式） |
 | `baoyu-compress-image` | 图片压缩 | **format 环节**：所有配图转 WebP 并压缩到目标体积 |
 | `baoyu-post-to-wechat` | 公众号发文 | **format 环节**：推送到草稿箱（人工闸门前停） |
+| `rsi-wechat 获客 CTA` | 企微承接 + 双诱饵注入 | **format 环节**：正文末注入企微二维码 + 资料包/试用双诱饵（`templates/format/cta.md`） |
 | `baoyu-url-to-markdown` | URL 转 Markdown | **topic 环节**：外部参考链接转成素材 |
 | `baoyu-xhs-images` | 小红书图片处理 | 可选：同一素材复用到小红书图文 |
 | `baoyu-slide-deck` | PPT/幻灯片生成 | 可选：长文转信息图/幻灯用于二次传播 |
@@ -199,6 +203,7 @@ openclaw cron run <cron-job-id>
 - **主题/颜色**：`default` / `blue`
 - **作者**：`杨教练`
 - **安全红线**：只进草稿箱，绝不自动群发；投资内容必含风险提示
+- **获客承接**：统一走企业微信；诱饵为「资料包 + 免费试用工具」双钩子；每篇文末注入 CTA 组件（`templates/format/cta.md`），二维码取 `config/wecom-qr.png`
 
 ## 详细参考
 
@@ -209,6 +214,7 @@ openclaw cron run <cron-job-id>
 | 草稿 JSON 模板 | `templates/02_drafts.json` |
 | 质检评分模板 | `templates/03_qa_scores.md` |
 | 待发布队列模板 | `templates/04_publish_queue.md` |
+| 文末获客 CTA 组件 | `templates/format/cta.md` |
 
 ---
 
