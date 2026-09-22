@@ -1,7 +1,7 @@
-# 八步流水线详细编排（rsi-wechat v1.2.0）
+# 九步流水线详细编排（rsi-wechat v1.3.0）
 
-> 本文件描述 `[热点采集] → topic → writer → qa → format → [import-urls] → archive → sync-ima` 八步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
-> 带方括号的两步为 v1.2.0 新增。
+> 本文件描述 `[热点采集] → [素材运营] → topic → writer → qa → format → [import-urls] → archive → sync-ima` 九步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
+> 带方括号的三步为 v1.2.0/v1.3.0 新增（v1.3.0 新增「素材运营」Step 0.7，整合原 ima-kb-curator）。
 
 ## 每天产出 3 篇（当前模式）
 
@@ -19,6 +19,7 @@
   │
   ├── Step 0：读 RSI 进化台账 + 建产物目录 + 校验 cron
   ├── Step 0.5：热点采集（opencli）→ 热点候选池 ⭐新增
+  ├── Step 0.7：素材采集与知识库运营 → 精品入库 + 查重 + 主题归位 + 根目录整理 ⭐v1.3.0新增
   ├── Step 1：spawn topic  → 01_topics.md（选题：IMA 存量 × 外部热点 交叉）
   ├── Step 2：spawn writer → 02_drafts.json（写作）
   ├── Step 3：spawn qa     → 03_qa_scores.md（质检）
@@ -48,6 +49,54 @@
 3. 把「热点候选池」贴进 topic 的 task 文本。
 
 **自检**：`opencli doctor`（Extension 需 connected）。
+
+## Step 0.7：素材采集与知识库运营（主控执行）⭐ v1.3.0 新增
+
+**目的**：在选题之前，为当天 3 篇与知识资产做「供给侧」准备——**主动采集外部精品入库 + 整理既有散落条目**（原独立技能 `ima-kb-curator` 的能力，已并入本技能）。与 Step 0.5（面向当日选题的热点池）、Step 4.5（面向本轮引用的回流）互补。
+
+**六步动作（强制顺序）**：
+
+```
+1. 侦察目录   → 拉全量文件夹树（含 folder_id）+ 各目录既有条目（references/folder-map.md 为缓存，须以实时结果为准）
+2. 多源采集   → 按 6 大领域定向采集候选（≥1.5×目标篇数）
+3. 查重比对   → 候选 vs 既有条目规范化比对，剔除重复
+4. 定稿与归属 → 每篇配「合适文件夹」，生成本轮清单
+5. 入库与整理 → 新增入目标文件夹；既有散落/根目录条目一并归位
+6. 验收       → 逐文件夹验证落位；失败重试（≥3 次）
+```
+
+**6 大采集领域（兴趣点画像）**：
+
+| 领域 | 典型落位文件夹 | 采集源示例 |
+|------|----------------|-----------|
+| AI 量化技术 | `2.AI量化技术/9.AI量化交易实践` | arxiv(q-fin.TR/cs.AI)、HF、期刊 |
+| AI 金融工具 | `2.AI量化技术/9.AI量化交易实践` | 产品页、GitHub、36kr |
+| AI 金融 Skill/MCP | `2.AI量化技术/2.养AI-让AI不断进化/Skills`、`.../MCP` | 36kr、社区、GitHub |
+| 开源量化项目 | `1.AI量化实训/量化开源研究` | github-trending、Show HN |
+| 量化行业与监管资讯 | `3.AI行业动态` | 36kr、gov-policy（证监会/交易所）、东财快讯 |
+| AI 前沿技术发展 | `2.AI量化技术/2.养AI-让AI不断进化`、`8.AI智能体趋势报告` | arxiv(cs.AI)、aibase、HackerNews |
+
+**采集命令**：一律 `opencli … -f json`（`github-trending` / `arxiv` / `36kr` / `gov-policy` / `aibase` / `hackernews` / `eastmoney`）；风控/导航拒绝 → 降级 `web_search`/`web_fetch`，不阻断。
+
+**查重**：规范化标题（保留 `[0-9a-z\u4e00-\u9fff]`）后做包含匹配，命中即视为重复；既有条目来自 `get_knowledge_list` 递归全部文件夹；同一素材源 7 天内不重复用。
+
+**入库与迁移机制（实测，务必按此执行）**：
+- 网页/微信文章 → `import_urls`（`folder_id` **必填**），用 `scripts/import_urls_to_ima.sh`。
+- 笔记（media_type=11）→ `add_knowledge` + `note_info.content_id=<note_id>` 归入目标文件夹。
+- 文件型（PDF/Word/PPT）→ 「preflight → check_repeated_names → create_media → COS → add_knowledge」；**已入库文件无法迁移**。
+
+| 迁移方式 | 结论 |
+|----------|------|
+| `move_knowledge` | ❌ **无效桩**（36 组合静默 no-op），**不要用** |
+| 同 URL 重 `import_urls` 到目标目录 | ✅ web/微信文章**真迁移**（`import_urls_to_ima.sh <url> --folder <目标>`） |
+| 笔记 `add_knowledge(mt=11)` | ✅ 归入目标文件夹 |
+| 文件类 | ❌ 无迁移 API，如实告知 |
+
+**防落根目录**：入库必带 `folder_id`，绝不省略（省略=根目录）；根目录 `get_knowledge_list` 含「最近添加」全局视图，**不代表归属根目录**，验收看目标文件夹。
+
+**产物与验收**：产物为 `/root/agents/shared/pipeline/<日期>/collect/`（清单 json + 归档报告 md）；验收逐条列明采纳篇目/来源/归属文件夹/失败项/去重剔除项，逐目标文件夹 `get_knowledge_list` 验证落位，失败退避重试 ≥3 次并告警不静默。
+
+> 机制速查见 `references/ima-api-mechanics.md`；文件夹 ID 见 `references/folder-map.md`。
 
 ## Step 1：topic（选题）
 

@@ -1,13 +1,15 @@
 ---
 name: rsi-wechat
-description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化".
-version: 1.2.0
+description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。含知识库运营（多源采集精品、查重、按主题归档、防落根目录）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化", "采集入库", "知识库归档", "整理知识库".
+version: 1.3.0
 metadata:
   openclaw:
     homepage: https://github.com/kenyanghui/rsi-wechat
 ---
 
 > **v1.2.0 变更**：①topic 环节新增**外部热点采集**（opencli：微博热搜/知乎热榜/36氪热榜/GitHub Trending/任意网页），与 IMA 存量素材做双轨交叉选题；②**定时校验**固化为纪律（以 `openclaw cron list` 为准，勿看旧 `~/.openclaw/cron/jobs.json`）；③新增 **Step 4.5 import-urls**：外部文章/链接经 `import_urls` 导入 IMA，形成「外部热点→入 IMA→存量素材→再选题」的 RSI 增强回路。
+>
+> **v1.3.0 变更**：整合原独立技能 `ima-kb-curator`，新增 **Step 0.7「素材采集与知识库运营」**（多源采集精品→查重→按主题归位→根目录整理），使知识库供给侧运营成为流水线一等公民；新增 `references/folder-map.md`、`references/ima-api-mechanics.md` 两份参考。附带实测机制：`move_knowledge` 为无效桩、同 URL 重导入=迁移、笔记用 `add_knowledge(mt=11)` 归位、文件类无法迁移。
 
 # RSI-WeChat 自进化公众号内容流水线
 
@@ -49,7 +51,9 @@ rsi-wechat/
 ├── articles/                 # 📦 已发布文章归档（同步到 GitHub，便于后续处理）
 │   └── <YYYY-MM-DD>/         # 每天一篇：article.md + meta.json + cover.png
 ├── references/
-│   └── pipeline.md           # 八步流水线详细编排（热点采集→topic→writer→qa→format→import-urls→archive→sync-ima）
+│   ├── pipeline.md           # 九步流水线详细编排（热点采集→素材运营→topic→writer→qa→format→import-urls→archive→sync-ima）
+│   ├── folder-map.md         # IMA「AI量化杨老师」文件夹地图（含 folder_id，v1.3.0 新增）
+│   └── ima-api-mechanics.md  # IMA 归档机制实测速查（可用/无效端点、迁移路径、常见坑，v1.3.0 新增）
 ├── config/
 │   ├── wecom-qr.png          # 企业微信获客活码（客户群活码，format 固定取此路径）
 │   └── wecom-qr.meta.json    # 活码元信息（类型/到期/替换记录）
@@ -69,15 +73,15 @@ rsi-wechat/
     └── rotate_wecom_qr.sh    # 更换企微活码（备份→覆盖→更新 meta 与台账）
 ```
 
-## 八步流水线（核心流程）
+## 九步流水线（核心流程）
 
 ```
-Step0.5 热点采集 → topic（选题） → writer（写作） → qa（质检） → format（排版发文）
+Step0.5 热点采集 → Step0.7 素材采集与知识库运营 → topic（选题） → writer（写作） → qa（质检） → format（排版发文）
    → Step4.5 import-urls（外部文章入 IMA） → archive（归档 GitHub） → sync-ima（同步 IMA 知识库）
 ```
 
 - 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
-- Step0.5（热点采集）、Step4.5（import-urls）、archive、sync-ima 由**主控**执行。
+- Step0.5（热点采集）、Step0.7（素材运营）、Step4.5（import-urls）、archive、sync-ima 由**主控**执行。
 
 详细编排见 `references/pipeline.md`。
 
@@ -116,6 +120,57 @@ bash scripts/import_urls_to_ima.sh <url文件|单个URL> [--folder <folder_id>] 
 - 单次 ≤ 10 个 URL（自动分批）；凭证缺失直接跳过并告警；失败不阻断主流程。
 - 仅在「本轮使用了外部 URL 素材」时执行。
 
+### 素材采集与知识库运营（v1.3.0 新增，Step 0.7）
+
+在 Step 0.5 之后、Step 1 之前运行，为当天 3 篇选题与知识资产做「供给侧」准备：**主动采集外部精品入库 + 整理既有散落条目**（原 `ima-kb-curator` 能力，已并入本技能）。
+
+**六步动作（强制顺序）**：
+
+```
+1. 侦察目录   → 拉全量文件夹树（含 folder_id）+ 各目录既有条目（references/folder-map.md 为缓存，须以实时结果为准）
+2. 多源采集   → 按 6 大领域定向采集候选（≥1.5×目标篇数）
+3. 查重比对   → 候选 vs 既有条目规范化比对，剔除重复
+4. 定稿与归属 → 每篇配「合适文件夹」，生成本轮清单
+5. 入库与整理 → 新增入目标文件夹；既有散落/根目录条目一并归位
+6. 验收       → 逐文件夹验证落位；失败重试（≥3 次）
+```
+
+**6 大采集领域（兴趣点画像）**：
+
+| 领域 | 典型落位文件夹 | 采集源示例 |
+|------|----------------|-----------|
+| AI 量化技术 | `2.AI量化技术/9.AI量化交易实践` | arxiv(q-fin.TR/cs.AI)、HF、期刊 |
+| AI 金融工具 | `2.AI量化技术/9.AI量化交易实践` | 产品页、GitHub、36kr |
+| AI 金融 Skill/MCP | `2.AI量化技术/2.养AI-让AI不断进化/Skills`、`.../MCP` | 36kr、社区、GitHub |
+| 开源量化项目 | `1.AI量化实训/量化开源研究` | github-trending、Show HN |
+| 量化行业与监管资讯 | `3.AI行业动态` | 36kr、gov-policy（证监会/交易所）、东财快讯 |
+| AI 前沿技术发展 | `2.AI量化技术/2.养AI-让AI不断进化`、`8.AI智能体趋势报告` | arxiv(cs.AI)、aibase、HackerNews |
+
+**查重**：规范化标题（保留 `[0-9a-z\u4e00-\u9fff]`）后做包含匹配，命中即视为重复；既有条目来自 `get_knowledge_list` 递归全部文件夹；同一素材源 7 天内不重复用。
+
+**入库与迁移机制（实测，务必按此执行）**：
+
+| 类型 | 动作 |
+|------|------|
+| 网页/微信文章 | `import_urls`（`folder_id` **必填**）→ 用 `scripts/import_urls_to_ima.sh` |
+| 笔记（media_type=11） | `add_knowledge` + `note_info.content_id=<note_id>` 归入目标文件夹 |
+| 文件型（PDF/Word/PPT） | 走「preflight → check_repeated_names → create_media → COS → add_knowledge」；**已入库文件无法迁移** |
+
+| 迁移方式 | 结论 |
+|----------|------|
+| `move_knowledge` | ❌ **无效桩**（36 组合静默 no-op），**不要用** |
+| 同 URL 重 `import_urls` 到目标目录 | ✅ web/微信文章**真迁移**（`import_urls_to_ima.sh <url> --folder <目标>`） |
+| 笔记 `add_knowledge(mt=11)` | ✅ 归入目标文件夹 |
+| 文件类 | ❌ 无迁移 API，如实告知 |
+
+**防落根目录**：入库必带 `folder_id`，绝不省略（省略=根目录）；根目录 `get_knowledge_list` 含「最近添加」全局视图，**不代表归属根目录**，验收看目标文件夹。
+
+**与既有环节的关系**：Step 0.5 产出当日热点候选池（面向选题）；Step 0.7 主动采集精品沉淀入库并整理既有条目（面向知识资产）；Step 4.5 把本轮已引用的外部 URL 回流 IMA。三者互补，不重复。
+
+**产物与验收**：产物为 `/root/agents/shared/pipeline/<日期>/collect/`（清单 json + 归档报告 md）；验收逐条列明采纳篇目/来源/归属文件夹/失败项/去重剔除项，逐目标文件夹 `get_knowledge_list` 验证落位，失败退避重试 ≥3 次并告警不静默。
+
+详细编排见 `references/pipeline.md` 的 Step 0.7；机制速查见 `references/ima-api-mechanics.md`；文件夹 ID 见 `references/folder-map.md`。
+
 ### 各环节职责速览
 
 | 环节 | Agent | 输入 | 输出 | 关键动作 |
@@ -124,6 +179,7 @@ bash scripts/import_urls_to_ima.sh <url文件|单个URL> [--folder <folder_id>] 
 | 写作 | writer | `01_topics.md` | `02_drafts.json` | 写完整长文（付费段不占位） |
 | 质检 | qa | `02_drafts.json` | `03_qa_scores.md` | 打分评级、合规一票否决 |
 | 排版 | format | `03_qa_scores.md` | `04_publish_queue.md` + 草稿箱 | 排版、配图、**注入文末获客 CTA**、推草稿箱 |
+| 素材运营 | 主控 | IMA 知识库 + opencli | 入库清单 + 归档报告 | **采集精品入库、查重、主题归位、根目录整理（Step 0.7）** |
 | 归档 | 主控 | `04_publish_queue.md` + format 产物 | `articles/<日期>/` + GitHub | **同步文章到 GitHub，便于后续处理** |
 | 同步 IMA | 主控 | `articles/<日期>/` 或 pipeline 产物 | IMA「4.AI生产文章」 | **把文章同步进 IMA 知识库归档** |
 
@@ -243,6 +299,7 @@ openclaw cron run <cron-job-id>
 
 - **素材库**：IMA 知识库「AI量化杨老师」，kb_id `5JU-YyL5WUdMp3ZzS_7M2B6G5XpOB4ofM2rdKkMr3jY=`
 - **外部热点源**：opencli（微博/知乎/36氪/GitHub Trending/web read）
+- **内容运营（v1.3.0）**：Step 0.7 素材采集与知识库运营；采集领域 6 类；迁移用 `scripts/import_urls_to_ima.sh <url> --folder <目标>`；文件夹地图见 `references/folder-map.md`
 - **频率**：每天 07:20 产出 **3 篇**爆款（cron `20 7 * * *`，Asia/Shanghai）
   - 校验方式：`openclaw cron list`（真实 job 在 Gateway）；主 job id `a1687335-482e-4b24-ba14-527099ec9193`，看门狗 `c26bb402-6014-4447-aecc-e85bcabcf2cd`
   - ⚠️ **勿**以 `~/.openclaw/cron/jobs.json` 判断（旧版迁移文件，恒空）
@@ -267,6 +324,8 @@ openclaw cron run <cron-job-id>
 | 待发布队列模板 | `templates/04_publish_queue.md` |
 | 文末获客 CTA 组件 | `templates/format/cta.md` |
 | 更换企微活码脚本 | `scripts/rotate_wecom_qr.sh` |
+| IMA 文件夹地图（含 folder_id） | `references/folder-map.md` |
+| IMA 归档机制实测速查 | `references/ima-api-mechanics.md` |
 
 ---
 
