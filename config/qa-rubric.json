@@ -1,0 +1,33 @@
+{
+  "$comment": "rsi-wechat 质检规则引擎（v1.4.0 新增）。qa agent 必须按本 rubric 打分：任一 veto 触发即不通过（分数再高也退回 writer）；总分 < min_total 退回。规则演进请改本文件并在台账「演进记录」留痕，勿散落进 agent 提示词。",
+  "version": "1.4.0",
+  "min_total": 85,
+  "max_total": 100,
+  "dimensions": [
+    {"id": "hook", "name": "标题钩子", "weight": 20,
+     "criteria": "15 字内主标题制造好奇缺口；可用反问/否定重构/痛点直给句式（参考台账风格卡）",
+     "deduct": "主标题 >30 字扣 5；无钩子平铺直叙扣 8"},
+    {"id": "value", "name": "干货密度", "weight": 25,
+     "criteria": "每 300 字至少 1 个可执行方法/反常识观点；观点必须来自自有知识库素材，热点仅作切入钩子",
+     "deduct": "空心化（通篇蹭热点无自有观点）直接触发 veto:content_hollow"},
+    {"id": "structure", "name": "结构节奏", "weight": 15,
+     "criteria": "开头 3 行内入题；小标题分段 ≤400 字/段；结尾有明确 CTA 或金句收束"},
+    {"id": "credibility", "name": "合规与可信", "weight": 20,
+     "criteria": "无收益承诺、无绝对化用语（最好/第一/稳赚）、无未经验证数据",
+     "deduct": "每处绝对化用语扣 3；收益承诺直接触发 veto:compliance"},
+    {"id": "readability", "name": "移动端可读性", "weight": 10,
+     "criteria": "段落 ≤5 行；关键句加粗；配图位合理（每 800-1200 字 1 图）"},
+    {"id": "cta", "name": "获客组件", "weight": 10,
+     "criteria": "文末含 cta.md 组件（企微活码承接）；活码路径固定 config/wecom-qr.png"}
+  ],
+  "vetoes": [
+    {"id": "compliance", "desc": "含收益承诺/违规用语 —— 一票否决"},
+    {"id": "content_hollow", "desc": "内容空心化：主体观点非来自自有知识库 —— 一票否决"},
+    {"id": "source_dup", "desc": "主素材命中台账避重规则（7 天内复用或累计≥2 次）—— 一票否决，退回 topic"}
+  ],
+  "output_contract": {
+    "score_file": "03_qa_scores.md",
+    "must_record": ["各维度得分", "总分", "命中的 veto（如有）", "逐条修改建议（退回时）", "金句提炼（入台账候选）"],
+    "recycle_rule": "总分 <85 或触发 veto → 附修改建议退回 writer 重写；同一篇最多重写 2 次，仍不过则换选题"
+  }
+}

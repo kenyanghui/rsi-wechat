@@ -39,9 +39,7 @@ if [ ! -f ~/.config/ima/client_id ] || [ ! -f ~/.config/ima/api_key ]; then
   echo "⚠️  IMA 凭证缺失（~/.config/ima/{client_id,api_key}），跳过 IMA 同步"
   exit 0   # 不阻断主流程
 fi
-export IMA_OPENAPI_CLIENTID="$(cat ~/.config/ima/client_id)"
-export IMA_OPENAPI_APIKEY="$(cat ~/.config/ima/api_key)"
-OPTS=$(printf '{"clientId":"%s","apiKey":"%s"}' "$IMA_OPENAPI_CLIENTID" "$IMA_OPENAPI_APIKEY")
+# 凭证不 export、不落明文变量：由下方 Python 直接读文件（key 不进 ps/env）
 
 echo "=== rsi-wechat → IMA 同步归档 ==="
 echo "日期: ${DATE}"

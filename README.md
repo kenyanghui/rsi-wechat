@@ -8,15 +8,17 @@ OpenClaw 多 agent 自动内容流水线，从 IMA 知识库挖素材，全自�
 
 - **一句话触发**：对 assistant 说「跑流水线」即可执行完整六步（含 GitHub 归档 + IMA 同步）
 - **定时执行**：每天 07:20 自动运行，产出 **3 篇**爆款（角度互不重复）
-- **六步自动**：topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）→ archive 归档 GitHub → sync-ima 同步 IMA 知识库
+- **九步自动**：热点采集 → 素材运营 → topic 选题 → writer 写作 → qa 质检 → format 排版（含配图、发文到草稿箱）→ import-urls 入库 → archive 归档 GitHub → sync-ima 同步 IMA 知识库
 - **人工闸门**：3 篇全部进草稿箱，由杨辉老师人工选择群发
 - **文章归档**：每次发布后把文章同步到 GitHub（`articles/<日期>[-n]/`），并同步进 IMA 知识库「4.AI生产文章」，便于后续处理
 - **RSI 自进化**：每轮回收进化台账，内容质量逐轮递增
+- **Truth-first**：每日 3 篇是目标而非硬配额——素材不足允许减产并留痕，绝不凑数发空心文（v1.5.0）
+- **Workflow Router**：主 SKILL.md 只做路由入口，执行细节下沉 references/scripts；含 preflight 实测纪律与简报输出契约（v1.5.0，借鉴 Draco-Skills-Collection）
 
 ## 六步流水线
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub） → sync-ima（同步 IMA）
+热点采集 → 素材运营 → topic（选题） → writer（写作） → qa（质检） → format（排版发文） → import-urls（入库） → archive（归档 GitHub） → sync-ima（同步 IMA）
 ```
 
 > 每天跑 3 轮，产物分放 `<日期>/p1/`、`p2/`、`p3/`。

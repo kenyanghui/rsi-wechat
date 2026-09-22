@@ -40,6 +40,9 @@ check "文章归档目录" "$(dirname "$0")/../articles"
 check "归档脚本" "$(dirname "$0")/archive_article.sh"
 check "IMA 导入脚本" "$(dirname "$0")/import_urls_to_ima.sh"
 check "获客活码脚本" "$(dirname "$0")/rotate_wecom_qr.sh"
+check "SSOT 注册表" "$(dirname "$0")/../pipeline/MANIFEST.json"
+check "防漂移守卫" "$(dirname "$0")/check_drift.sh"
+check "质检规则引擎" "$(dirname "$0")/../config/qa-rubric.json"
 check "IMA 文件夹地图" "$(dirname "$0")/../references/folder-map.md"
 check "IMA 归档机制速查" "$(dirname "$0")/../references/ima-api-mechanics.md"
 check "获客二维码" "$(dirname "$0")/../config/wecom-qr.png"
@@ -58,6 +61,14 @@ else
 fi
 
 echo ""
-echo "=== 请主控 agent 按 references/pipeline.md 依次 spawn 四个子 agent ==="
+echo "=== 防漂移自检（v1.4.0）==="
+if bash "$(dirname "$0")/check_drift.sh"; then
+  echo "✅ 漂移自检通过"
+else
+  echo "⚠️  漂移自检 FAIL：请先修复版本口径/台账问题再跑流水线"
+fi
+
+echo ""
+echo "=== 请主控 agent 按 references/pipeline.md 依次编排九步流水线 ==="
 echo "   Step0.5 热点采集(opencli) → Step0.7 素材采集与知识库运营 → topic → writer → qa → format → Step4.5 import-urls → archive → sync-ima"
-echo "完成后：①导入外部文章到 IMA（scripts/import_urls_to_ima.sh）②归档到 GitHub（scripts/archive_article.sh）③同步 IMA（scripts/sync_to_ima.sh）④回写 RSI 台账"
+echo "完成后（Step 7 复盘，不可跳过）：①导入外部文章到 IMA（scripts/import_urls_to_ima.sh）②归档到 GitHub（scripts/archive_article.sh）③同步 IMA（scripts/sync_to_ima.sh）④回写 RSI 台账 + 人工修正 diff 采集 + 再跑一次 check_drift.sh"

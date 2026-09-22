@@ -47,9 +47,8 @@ if [ ! -f ~/.config/ima/client_id ] || [ ! -f ~/.config/ima/api_key ]; then
   echo "⚠️  IMA 凭证缺失（~/.config/ima/{client_id,api_key}），跳过导入"
   exit 0
 fi
-export IMA_OPENAPI_CLIENTID="$(cat ~/.config/ima/client_id)"
-export IMA_OPENAPI_APIKEY="$(cat ~/.config/ima/api_key)"
-OPTS=$(printf '{"clientId":"%s","apiKey":"***"}' "$IMA_OPENAPI_CLIENTID" "$IMA_OPENAPI_APIKEY")
+# 凭证不 export（避免泄进环境/ps）：仅拼装入参传给 ima_api.cjs
+OPTS=$(python3 -c 'import json;print(json.dumps({"clientId":open("'$HOME'/.config/ima/client_id").read().strip(),"apiKey":open("'$HOME'/.config/ima/api_key").read().strip()}))')
 
 # ── 收集 URL 列表 ──
 LIST_FILE="$(mktemp)"

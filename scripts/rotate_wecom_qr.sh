@@ -61,11 +61,12 @@ if [ "${DRY_RUN}" = "1" ]; then
   exit 0
 fi
 
-# 1) 备份旧码
+# 1) 备份旧码（文件名含时分秒，同日多次换码不互相覆盖）
 mkdir -p "${ARCHIVE_DIR}"
 if [ -f "${QR_FILE}" ]; then
-  cp -f "${QR_FILE}" "${ARCHIVE_DIR}/wecom-qr-${today}.png"
-  echo "✅ 旧码已备份: ${ARCHIVE_DIR}/wecom-qr-${today}.png"
+  BAK="${ARCHIVE_DIR}/wecom-qr-$(date +%Y-%m-%d-%H%M%S).png"
+  cp -f "${QR_FILE}" "${BAK}"
+  echo "✅ 旧码已备份: ${BAK}"
 fi
 
 # 2) 覆盖新码（format 自动复用）

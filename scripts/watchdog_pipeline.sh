@@ -89,7 +89,28 @@ if [ -n "${LAST_AT}" ]; then
 fi
 
 if [ "${LAST_DAY}" = "${TODAY}" ] && [ "${LAST_STATUS}" = "ok" ]; then
-  echo "NO_REPLY"
+  # ⭐ R5 静默失败探测（v1.4.0 新增）：cron 报 ok 但当日无归档产物 = 流水线「成功但没干活」。
+  #    归档断档检查复用 check_drift.sh 的 G4 逻辑（阈值一致，默认 2 天）。
+  ARCHIVE_OK=1
+  if [ -x "$(dirname "$0")/check_drift.sh" ] || [ -f "$(dirname "$0")/check_drift.sh" ]; then
+    GAP_CHECK="$(bash "$(dirname "$0")/check_drift.sh" 2>/dev/null | sed -n 's/^⚠️  归档断档 \([0-9]*\) 天.*/\1/p' | head -1)"
+    if [ -n "${GAP_CHECK}" ]; then
+      ARCHIVE_OK=0
+    fi
+  fi
+  if [ "${ARCHIVE_OK}" = "1" ]; then
+    echo "NO_REPLY"
+    exit 0
+  fi
+  # 断档告警只报告不自愈（重跑大概率同样静默）；今日已告警过则不刷屏
+  WARN_STATE="${PIPELINE_ROOT}/.watchdog-${TODAY}.gapwarn"
+  if [ -f "${WARN_STATE}" ]; then
+    echo "NO_REPLY"
+    exit 0
+  fi
+  mkdir -p "${PIPELINE_ROOT}" 2>/dev/null || true
+  touch "${WARN_STATE}" 2>/dev/null || true
+  echo "⚠️️ 流水线 cron 报 ok，但归档已断档 ${GAP_CHECK} 天（最新归档远落后于今日）——疑似静默失败：编排成功但 format/archive 未产出。请检查当日产物目录 /root/agents/shared/pipeline/${TODAY}/ 与 Step7 简报。"
   exit 0
 fi
 

@@ -1,15 +1,30 @@
 ---
 name: rsi-wechat
-description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。含知识库运营（多源采集精品、查重、按主题归档、防落根目录）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化", "采集入库", "知识库归档", "整理知识库".
-version: 1.3.0
+aliases:
+  - 公众号流水线
+  - 微信公众号内容管线
+  - rsi内容管线
+description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合九步内容流水线（热点采集→素材运营→topic→writer→qa→format→import-urls→archive→sync-ima）、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。含知识库运营（多源采集精品、查重、按主题归档、防落根目录）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化", "采集入库", "知识库归档", "整理知识库".
+version: 1.5.0
+platforms: [linux]
+prerequisites:
+  commands: [openclaw, opencli]
+  env: [IMA_TOKEN, IMA_KB_ID, IMA_FOLDER_ID]
 metadata:
   openclaw:
     homepage: https://github.com/kenyanghui/rsi-wechat
+  drift_guards:
+    manifest: pipeline/MANIFEST.json
+    check: scripts/check_drift.sh
 ---
 
 > **v1.2.0 变更**：①topic 环节新增**外部热点采集**（opencli：微博热搜/知乎热榜/36氪热榜/GitHub Trending/任意网页），与 IMA 存量素材做双轨交叉选题；②**定时校验**固化为纪律（以 `openclaw cron list` 为准，勿看旧 `~/.openclaw/cron/jobs.json`）；③新增 **Step 4.5 import-urls**：外部文章/链接经 `import_urls` 导入 IMA，形成「外部热点→入 IMA→存量素材→再选题」的 RSI 增强回路。
 >
 > **v1.3.0 变更**：整合原独立技能 `ima-kb-curator`，新增 **Step 0.7「素材采集与知识库运营」**（多源采集精品→查重→按主题归位→根目录整理），使知识库供给侧运营成为流水线一等公民；新增 `references/folder-map.md`、`references/ima-api-mechanics.md` 两份参考。附带实测机制：`move_knowledge` 为无效桩、同 URL 重导入=迁移、笔记用 `add_knowledge(mt=11)` 归位、文件类无法迁移。
+>
+> **v1.4.0 变更（借鉴 octopus-workflow：SSOT + drift guards + retrospective）**：①新增 **`pipeline/MANIFEST.json` SSOT 注册表**——版本/步骤数/环节清单唯一事实源；②新增 **`scripts/check_drift.sh` 防漂移守卫**——G1 版本一致性 / G2 步骤链口径 / G3 台账章节完整性 / G4 归档断档检测 / G5 编码健康；③**Step 7 复盘（retrospective）固化为不可跳过环节**——含人工修正 diff 采集（草稿 vs 实发，回填台账「人工修正记录」）与漂移自检；④新增 **`config/qa-rubric.json` 质检规则引擎**——六维加权 + 三条一票否决（合规/空心化/素材避重），取代散落的评分口径；⑤安全修复：IMA 凭证不再 export 落环境。
+>
+> **v1.5.0 变更（借鉴 Draco-Skills-Collection：路由分层 + 输出契约 + preflight + truth-first）**：①frontmatter 扩展——新增 `aliases`（中文触发别名）、`platforms`、`prerequisites`（命令/环境变量依赖清单）、`metadata.drift_guards`；②新增 **Workflow Router 路由层**——本 SKILL.md 只做「类级入口」，执行细节下沉到 `references/pipeline.md` 与各脚本；③新增 **Step 0 preflight 纪律块**（date 实测 + 凭证探测 + cron 以 `openclaw cron list` 为准）；④新增 **Step 7 简报输出契约**（固定字段 + 部分失败必须明示）；⑤新增 **truth-first 原则**——素材不足允许减产并在台账留痕，禁止凑数（写入 topic/qa 职责）。
 
 # RSI-WeChat 自进化公众号内容流水线
 
@@ -41,6 +56,24 @@ metadata:
 1. 上一轮的人工修正和质检反馈，是下一轮最重要的养分。
 2. 每次跑完必须「复盘」，把可复用经验固化进台账，不重复踩坑。
 3. 越用越聪明：素材库、风格卡、金句库随轮次累积，永不归零。
+4. **Truth first, no quota-filling（真相优先，不凑数）**：素材不足时宁缺毋滥——允许减产（3 篇 → 2 篇 → 1 篇）并在台账「RSI 回路快照」留痕说明原因，绝不为了凑满 3 篇发空心文。产量目标服从质量红线。
+
+## Workflow Router（本文件是类级入口，只做路由）
+
+借鉴 Draco `wechat-publishing-workflow` 的两层结构：**主 SKILL.md 只负责「判断该走哪条路」，执行细节全部下沉**到 references 与 scripts，控制主文件上下文占用。
+
+| 任务意图 | 路由到 |
+|---------|--------|
+| 跑完整流水线 / 每日三篇 | `references/pipeline.md`（九步编排手册）→ `scripts/run_pipeline.sh` |
+| 只做素材采集 / 整理知识库 | `references/pipeline.md` § Step 0.7 + `scripts/import_urls_to_ima.sh` |
+| 文章归档 GitHub | `scripts/archive_article.sh` |
+| 同步 IMA 知识库 | `scripts/sync_to_ima.sh` + `references/ima-api-mechanics.md` |
+| 找 IMA 文件夹 ID | `references/folder-map.md` |
+| 换企微获客活码 | `scripts/rotate_wecom_qr.sh` |
+| 发布数据回流 | `scripts/fetch_stats.sh` |
+| 版本/口径漂移排查 | `scripts/check_drift.sh`（SSOT：`pipeline/MANIFEST.json`） |
+
+**路由纪律**：①改流程细节改 references / 脚本，不动本文件；②版本号只改 `pipeline/MANIFEST.json` 再同步本文件 frontmatter（`check_drift.sh` G1 校验）；③新增环节必须先在 MANIFEST 注册，再补文档。
 
 ## 目录结构
 
@@ -54,6 +87,9 @@ rsi-wechat/
 │   ├── pipeline.md           # 九步流水线详细编排（热点采集→素材运营→topic→writer→qa→format→import-urls→archive→sync-ima）
 │   ├── folder-map.md         # IMA「AI量化杨老师」文件夹地图（含 folder_id，v1.3.0 新增）
 │   └── ima-api-mechanics.md  # IMA 归档机制实测速查（可用/无效端点、迁移路径、常见坑，v1.3.0 新增）
+├── pipeline/
+│   ├── MANIFEST.json         # SSOT 注册表：版本/步骤数/环节清单唯一事实源（v1.4.0 新增）
+│   └── PIPELINE.md           # 流水线口径卡（对外简述）
 ├── config/
 │   ├── wecom-qr.png          # 企业微信获客活码（客户群活码，format 固定取此路径）
 │   └── wecom-qr.meta.json    # 活码元信息（类型/到期/替换记录）
@@ -70,8 +106,15 @@ rsi-wechat/
     ├── archive_article.sh    # 文章归档到 GitHub（主控执行）
     ├── sync_to_ima.sh        # 文章同步到 IMA 知识库「4.AI生产文章」（主控执行）
     ├── import_urls_to_ima.sh # 外部文章/热点链接导入 IMA（v1.2.0 新增）
-    └── rotate_wecom_qr.sh    # 更换企微活码（备份→覆盖→更新 meta 与台账）
+    ├── rotate_wecom_qr.sh    # 更换企微活码（备份→覆盖→更新 meta 与台账）
+    ├── check_drift.sh        # 防漂移守卫（版本/步骤口径/台账完整性/归档断档/编码，v1.4.0 新增）
+    └── fetch_stats.sh        # 发布数据回流：阅读/点赞 → meta.json + 台账（v1.4.0 新增）
 ```
+
+### SSOT 与规则引擎（v1.4.0 新增）
+
+- `pipeline/MANIFEST.json`：版本、步骤数、环节清单的**唯一事实源**；文档口径以它为准，`scripts/check_drift.sh` 据此校验。
+- `config/qa-rubric.json`：qa 环节评分规则引擎（六维加权 + 三条一票否决），规则演进改此文件并在台账留痕，勿散落进 agent 提示词。
 
 ## 九步流水线（核心流程）
 
@@ -82,6 +125,7 @@ Step0.5 热点采集 → Step0.7 素材采集与知识库运营 → topic（选�
 
 - 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
 - Step0.5（热点采集）、Step0.7（素材运营）、Step4.5（import-urls）、archive、sync-ima 由**主控**执行。
+- **Step 7 复盘（retrospective，v1.4.0 固化，不可跳过）**：回写台账 + 人工修正 diff 采集（AI 终稿 vs 实发版，回填「人工修正记录」清零「待反馈」）+ 跑 `scripts/check_drift.sh` 漂移自检 + `scripts/fetch_stats.sh` 发布数据回流（阅读/点赞 → meta.json + 台账「发布数据」表）+ 用户简报。
 
 详细编排见 `references/pipeline.md`。
 
@@ -217,7 +261,7 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 
 > 目的：把每一篇已推送到公众号草稿箱的文章，同步归档到 IMA 知识库「AI量化杨老师」的 **「4.AI生产文章」** 文件夹（`folder_7507449254775045`），沉淀为可检索的知识资产。
 
-**同步时机**：GitHub 归档（第五步 archive）之后，由主控执行。
+**同步时机**：GitHub 归档（Step 5 archive）之后，由主控执行。
 
 **执行方式**：调用 `scripts/sync_to_ima.sh <日期> [产物目录] [--dry-run]`：
 1. 从 pipeline 产物的 `manifest.json` 或 `articles/<日期>*` 归档目录收集文章清单（自动去重）。
@@ -292,7 +336,7 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 ```bash
 # 一键触发（调用 cron run 或直接 spawn 主控）
 openclaw cron run <cron-job-id>
-# 或直接读 references/pipeline.md 手动按四步 spawn
+# 或直接读 references/pipeline.md 手动按九步 spawn
 ```
 
 ## 默认配置
@@ -317,7 +361,7 @@ openclaw cron run <cron-job-id>
 
 | 主题 | 文件 |
 |------|------|
-| 五步流水线（+归档）详细编排 | `references/pipeline.md` |
+| 九步流水线详细编排 | `references/pipeline.md` |
 | 选题 Brief 模板 | `templates/01_topics.md` |
 | 草稿 JSON 模板 | `templates/02_drafts.json` |
 | 质检评分模板 | `templates/03_qa_scores.md` |
