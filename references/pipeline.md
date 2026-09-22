@@ -1,6 +1,7 @@
-# 六步流水线详细编排（rsi-wechat）
+# 八步流水线详细编排（rsi-wechat v1.2.0）
 
-> 本文件描述 `topic → writer → qa → format → archive → sync-ima` 六步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
+> 本文件描述 `[热点采集] → topic → writer → qa → format → [import-urls] → archive → sync-ima` 八步内容流水线的完整编排规范，是主控 orchestrate 的动作手册。
+> 带方括号的两步为 v1.2.0 新增。
 
 ## 每天产出 3 篇（当前模式）
 
@@ -16,11 +17,13 @@
 ```
 主控（main）
   │
-  ├── Step 0：读 RSI 进化台账 + 建产物目录
-  ├── Step 1：spawn topic  → 01_topics.md（选题，从 IMA 挖素材）
+  ├── Step 0：读 RSI 进化台账 + 建产物目录 + 校验 cron
+  ├── Step 0.5：热点采集（opencli）→ 热点候选池 ⭐新增
+  ├── Step 1：spawn topic  → 01_topics.md（选题：IMA 存量 × 外部热点 交叉）
   ├── Step 2：spawn writer → 02_drafts.json（写作）
   ├── Step 3：spawn qa     → 03_qa_scores.md（质检）
   ├── Step 4：spawn format → 04_publish_queue.md + 草稿箱（排版发文）
+  ├── Step 4.5：import-urls（主控执行）→ 外部文章/链接导入 IMA ⭐新增
   ├── Step 5：archive（主控执行）→ articles/<日期>[-n]/ + GitHub 同步
   ├── Step 6：sync-ima（主控执行）→ IMA 知识库「4.AI生产文章」
   └── Step 7：回写 RSI 台账 + 简报
@@ -35,12 +38,24 @@
    - **金句库**：可复用的验证过金句。
 3. 把这些硬约束**拼进 topic 的 task 文本**，强制选题 agent 遵守。
 
+## Step 0.5：热点采集（主控执行）⭐ 新增
+
+1. 跑 2-3 条 opencli 热点命令，取当日 top N，形成「热点候选池」：
+   - `opencli weibo hot --limit 20 -f json`
+   - `opencli 36kr hot -f json`
+   - `opencli github-trending repos --since daily -f json`（技术向可选）
+2. 容错：任一命令失败（风控/Bridge 未连接）→ 降级 `web_search`/`web_fetch`，记录降级原因，不阻断。
+3. 把「热点候选池」贴进 topic 的 task 文本。
+
+**自检**：`opencli doctor`（Extension 需 connected）。
+
 ## Step 1：topic（选题）
 
 **spawn 参数**：`agentId: topic`
 
 **task 必含内容**：
 - 读 `/root/agents/shared/SOURCE-LEDGER.md` 做查重（与 RSI 台账联动）。
+- **交叉选题（v1.2.0 新增）**：从「热点候选池」中优先选**能用量化/财富认知角度切入的热点**作切入钩子；主体观点仍须来自自有知识库（禁止空心化）。热点来源也登记进 SOURCE-LEDGER.md 避重。
 - 从 IMA 知识库「AI量化杨老师」挖素材：
   1. 读 skill `skills/ima-skills/knowledge-base/SKILL.md`
   2. `search_knowledge` 搜索主题（量化投资/AI投资/财富传承/投资者行为）
@@ -96,6 +111,18 @@
 
 **红线**：绝不使用 `--submit`，到人工闸门即停。
 
+## Step 4.5：import-urls 外部文章入 IMA（主控执行）⭐ 新增
+
+**目的**：把本轮引用的外部热点文章/参考链接回流进 IMA 知识库，沉淀为可检索素材，形成「外部热点→入 IMA→存量素材→再选题」的增强回路。
+
+**动作**：
+1. 收集本轮 topic/writer 使用的外部 URL（写入临时文件，每行一个）。
+2. 执行 `bash scripts/import_urls_to_ima.sh <url文件> [--folder <folder_id>] [--dry-run]`。
+3. 网页/微信文章直接走 `import_urls`；文件型 URL 走文件上传流程。
+
+**触发条件**：仅当本轮使用了外部 URL 素材时执行；无则跳过。
+**纪律**：凭证缺失直接跳过并告警；失败不阻断主流程；导入结果记入 `_rsi_ledger.md`「素材避重」表（标注「外部导入」）。
+
 ## Step 5：archive 归档到 GitHub（主控执行）⭐ 便于后续处理
 
 **目的**：把已推送到公众号草稿箱的文章，同步归档到 GitHub `kenyanghui/rsi-wechat`，便于后续处理（数据分析、二次分发、人工复盘、构建历史文章库）。
@@ -132,6 +159,7 @@
 
 ## Step 7：回写台账 + 简报（主控执行）
 
+0. **定时校验（v1.2.0）**：确认 `openclaw cron list` 中主 job（`a1687335-482e-4b24-ba14-527099ec9193`，`20 7 * * *` @ Asia/Shanghai）启用且频率正确；**勿**以 `~/.openclaw/cron/jobs.json` 判断。
 1. 更新 RSI 进化台账 `_rsi_ledger.md`：
    - 素材避重表追加本轮新源。
    - 风格偏好/金句库按质检分和人工反馈更新。

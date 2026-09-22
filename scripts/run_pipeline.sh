@@ -38,8 +38,22 @@ check "RSI 进化台账" "$(dirname "$0")/../_rsi_ledger.md"
 check "选题查重台账" "/root/agents/shared/SOURCE-LEDGER.md"
 check "文章归档目录" "$(dirname "$0")/../articles"
 check "归档脚本" "$(dirname "$0")/archive_article.sh"
+check "IMA 导入脚本" "$(dirname "$0")/import_urls_to_ima.sh"
+check "获客二维码" "$(dirname "$0")/../config/wecom-qr.png"
+
+# 外部热点能力（v1.2.0）：opencli CLI + Browser Bridge 插件
+if command -v opencli >/dev/null 2>&1; then
+  echo "  ✅ opencli CLI: $(command -v opencli) ($(opencli --version 2>/dev/null | head -1))"
+else
+  echo "  ⚠️  opencli CLI: 未安装（热点采集将降级 web_search）"
+fi
+if [ -f "$HOME/.openclaw/opencli-extension/manifest.json" ]; then
+  echo "  ✅ Browser Bridge 插件: $HOME/.openclaw/opencli-extension"
+else
+  echo "  ⚠️  Browser Bridge 插件: 缺失（opencli 热点不可用）"
+fi
 
 echo ""
 echo "=== 请主控 agent 按 references/pipeline.md 依次 spawn 四个子 agent ==="
-echo "   topic → writer → qa → format"
-echo "完成后：①归档文章到 GitHub（scripts/archive_article.sh） ②回写 RSI 台账 _rsi_ledger.md"
+echo "   Step0.5 热点采集(opencli) → topic → writer → qa → format → Step4.5 import-urls → archive → sync-ima"
+echo "完成后：①导入外部文章到 IMA（scripts/import_urls_to_ima.sh）②归档到 GitHub（scripts/archive_article.sh）③同步 IMA（scripts/sync_to_ima.sh）④回写 RSI 台账"

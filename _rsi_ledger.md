@@ -42,7 +42,13 @@
 | 第2轮 | 2026-09-20 | 91 → 89 | 商业/心智层角度，与首篇形成两翼；标题收敛、绝对化用语清零 | ①换主素材（避免源重复）②补正式封面素材 ③探索 JSON 归档编号化 |
 | 第3轮（验证轮·3篇并行） | 2026-09-20 | 平均 88（p1 89 / p2 90 / p3 85） | 首次跑通「每天 3 篇」模式：3 篇互不重复角度（思维层/心智层/方法论层）均过审入草稿箱；多篇并发编排 + 自动编号归档落地 | ①修子任务重复编排导致草稿重复的问题（已人工去重为 3 条）②3 篇角度差异化调度要更早锁定，避免 topic 反查③发布轮次幂等（同一篇不重复推草稿） |
 
-## 6. 系统改进记录（skill 自进化）
+## 7. 有效期提醒（Expiry Watch）
+
+| 项目 | 文件/位置 | 生效日期 | 到期日期 | 处理动作 | 状态 |
+|------|-----------|----------|----------|----------|------|
+| 企业微信获客二维码 | `config/wecom-qr.png`（文末 CTA 承接） | 2026-09-20 | **2026-09-30** | 到期前更换新活码并重新生成文末引导图；建议改用「群活码」避免 7 天失效 | ⏳ 待处理 |
+
+> 纪律：任何带有效期的素材（二维码/链接/活动）必须登记本表；到期前至少 2 天处理，避免文章里挂失效码。
 | 日期 | 改进项 | 内容 | 触发原因 |
 |------|--------|------|---------|
 | 2026-09-20 | 归档脚本 bug 修复 | ①meta.json 的 media_id 提取加反引号优先匹配；②标题 JSON 转义；③同日多篇自动编号（-2/-3）；④修正 git add 路径为相对 DEST | 首篇归档测试中发现 media_id 带前缀、标题引号破坏 JSON；同日第2篇归档时发现会覆盖/漏提交 |
@@ -54,3 +60,4 @@
 | 2026-09-23 | opencli 热点能力接入（环境就绪） | 安装 `@jackwener/opencli` v1.8.7；Browser Bridge 插件 v1.0.24 下载至 `~/.openclaw/opencli-extension` 并随 headless Chromium（CDP 9222）以 `--load-extension` 加载；`opencli doctor` 全绿；实测 `weibo hot` / `36kr hot` / `github-trending repos` / `web read` 可用；`weixin search` 受搜狗风控，设计为降级 web_search | 用户要求：补齐「热点搜索」能力 |
 | 2026-09-23 | 定时任务认知修正 | 确认 Gateway 中已存在每日编排 job `a1687335`（`20 7 * * *` @ Asia/Shanghai）与看门狗 job `c26bb402`；**判断定时是否存在须用 `openclaw cron list`，勿看旧的 `~/.openclaw/cron/jobs.json`（迁移文件，恒为空）** | 前次误判「定时未注册」 |
 | 2026-09-23 | rsi-wechat v1.2.0 升级提案（pending） | ①topic 双轨素材（IMA 存量 × 外部热点）②定时校验纪律 ③新增 `scripts/import_urls_to_ima.sh`（外部文章经 `import_urls` 入 IMA，形成「热点→入 IMA→再选题」回路）。提案 id `rsi-wechat-20260922-b9bf44336f`，待人工 apply | 用户要求：两步都补 + 新增获取文章加入 IMA |
+| 2026-09-23 | v1.2.0 已 apply 落地 | 线上 `skills/rsi-wechat/` 已更新：SKILL.md 升 v1.2.0（八步流水线+热点采集章节+import-urls）、references/pipeline.md（Step0.5/Step4.5）、templates/01_topics.md（源清单增热度列）、scripts/run_pipeline.sh（依赖检查）、新增 scripts/import_urls_to_ima.sh（已 dry-run 验证） | 用户明确批准 apply |

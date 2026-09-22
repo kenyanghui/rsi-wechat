@@ -1,11 +1,13 @@
 ---
 name: rsi-wechat
 description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合 topic→writer→qa→format 四步内容流水线、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化".
-version: 1.1.0
+version: 1.2.0
 metadata:
   openclaw:
     homepage: https://github.com/kenyanghui/rsi-wechat
 ---
+
+> **v1.2.0 变更**：①topic 环节新增**外部热点采集**（opencli：微博热搜/知乎热榜/36氪热榜/GitHub Trending/任意网页），与 IMA 存量素材做双轨交叉选题；②**定时校验**固化为纪律（以 `openclaw cron list` 为准，勿看旧 `~/.openclaw/cron/jobs.json`）；③新增 **Step 4.5 import-urls**：外部文章/链接经 `import_urls` 导入 IMA，形成「外部热点→入 IMA→存量素材→再选题」的 RSI 增强回路。
 
 # RSI-WeChat 自进化公众号内容流水线
 
@@ -62,16 +64,52 @@ rsi-wechat/
     └── sync_to_ima.sh        # 文章同步到 IMA 知识库「4.AI生产文章」（主控执行）
 ```
 
-## 六步流水线（核心流程）
+## 八步流水线（核心流程）
 
 ```
-topic（选题） → writer（写作） → qa（质检） → format（排版发文） → archive（归档 GitHub） → sync-ima（同步 IMA 知识库）
+Step0.5 热点采集 → topic（选题） → writer（写作） → qa（质检） → format（排版发文）
+   → Step4.5 import-urls（外部文章入 IMA） → archive（归档 GitHub） → sync-ima（同步 IMA 知识库）
 ```
 
 - 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
-- 第五、六步由**主控**执行（无需单独 agent）：把本轮已发文章同步到 GitHub，再同步到 IMA 知识库「4.AI生产文章」。
+- Step0.5（热点采集）、Step4.5（import-urls）、archive、sync-ima 由**主控**执行。
 
 详细编排见 `references/pipeline.md`。
+
+### 外部热点采集（v1.2.0 新增）
+
+topic 环节的素材来源升级为**双轨**：
+
+```
+素材来源
+├─ 内部存量：IMA 知识库「AI量化杨老师」（search_knowledge / get_knowledge_list）  ← 原有
+└─ 外部实时：opencli 热点采集                                                    ← 新增
+```
+
+| 场景 | 命令 |
+|------|------|
+| 微博热搜 | `opencli weibo hot --limit 20 -f json` |
+| 知乎热榜 | `opencli zhihu hot --limit 20 -f json`（偶发空返回，容错） |
+| 36氪热榜 | `opencli 36kr hot -f json` |
+| GitHub 趋势 | `opencli github-trending repos --since daily -f json` |
+| 任意网页转 Markdown | `opencli web read --url <URL> -f md` |
+| 微信文章搜索 | `opencli weixin search <关键词> -f json`（⚠️ 搜狗入口易风控，失败降级） |
+
+**纪律**：①热点仅作**切入钩子**，主体观点必须来自自有知识库，避免内容空心化；②热点来源同样登记进 `SOURCE-LEDGER.md` 避重；③任一 opencli 命令失败（风控/Bridge 未连接）降级到 `web_search`/`web_fetch`，不阻断，但需在「本轮源清单」标注。
+
+> **依赖**：opencli CLI + Browser Bridge 插件（位于 `~/.openclaw/opencli-extension`，随 headless Chromium CDP 9222 以 `--load-extension` 加载）。自检：`opencli doctor`。安装脚本：`skills/web-tools-guide/scripts/setup-opencli.sh`。
+
+### 外部文章 → IMA（v1.2.0 新增，Step 4.5）
+
+把本轮引用的外部热点文章/参考链接，经 `scripts/import_urls_to_ima.sh` 走 IMA `import_urls` 接口导入知识库，沉淀为可检索素材：
+
+```bash
+bash scripts/import_urls_to_ima.sh <url文件|单个URL> [--folder <folder_id>] [--dry-run]
+```
+
+- 网页/微信文章 → 直接 `import_urls`；文件型 URL → 走「下载→preflight→create_media→COS→add_knowledge」。
+- 单次 ≤ 10 个 URL（自动分批）；凭证缺失直接跳过并告警；失败不阻断主流程。
+- 仅在「本轮使用了外部 URL 素材」时执行。
 
 ### 各环节职责速览
 
@@ -199,12 +237,16 @@ openclaw cron run <cron-job-id>
 ## 默认配置
 
 - **素材库**：IMA 知识库「AI量化杨老师」，kb_id `5JU-YyL5WUdMp3ZzS_7M2B6G5XpOB4ofM2rdKkMr3jY=`
-- **频率**：每天 07:20 产出 **3 篇**爆款（cron `20 7 * * *`，Asia/Shanghai），全部进草稿箱供人工选择群发
+- **外部热点源**：opencli（微博/知乎/36氪/GitHub Trending/web read）
+- **频率**：每天 07:20 产出 **3 篇**爆款（cron `20 7 * * *`，Asia/Shanghai）
+  - 校验方式：`openclaw cron list`（真实 job 在 Gateway）；主 job id `a1687335-482e-4b24-ba14-527099ec9193`，看门狗 `c26bb402-6014-4447-aecc-e85bcabcf2cd`
+  - ⚠️ **勿**以 `~/.openclaw/cron/jobs.json` 判断（旧版迁移文件，恒空）
 - **发布方式**：`baoyu-post-to-wechat` API 方式
 - **文章归档**：每次发布后同步到 GitHub `kenyanghui/rsi-wechat`（`articles/<日期>/`）
 - **主题/颜色**：`default` / `blue`
 - **作者**：`杨教练`
 - **安全红线**：只进草稿箱，绝不自动群发；投资内容必含风险提示
+- **获客二维码**：`config/wecom-qr.png`（企业微信承接），**有效期至 2026-09-30**，到期前后必须更换活码
 - **获客承接**：统一走企业微信；诱饵为「资料包 + 免费试用工具」双钩子；每篇文末注入 CTA 组件（`templates/format/cta.md`），二维码取 `config/wecom-qr.png`
 
 ## 详细参考
