@@ -77,10 +77,10 @@ bash scripts/setup.sh
 
 | 参数 | 说明 |
 |------|------|
-| `DEEPSEEK_API_KEY` | DeepSeek Flash API Key（主 agent + 4 个子 agent 文本模型） |
-| `BAILIAN_API_KEY` | 阿里云百炼 API Key（图片生成） |
-| `LIGHTCLAWBOT_ACCOUNT_ID` | lightclawbot 账号 ID |
-| `LIGHTCLAWBOT_API_KEY` | lightclawbot API Key |
+| `DEEPSEEK_API_KEY` | DeepSeek API Key（主 agent + 4 个子 agent 文本模型） |
+| `GLM_API_KEY` | 智谱 GLM API Key（图片生成 / 多模态） |
+| `LIGHTCLAWBOT_ACCOUNT_ID` | lightclawbot 账号 ID（消息通道账号标识，非模型 Key） |
+| `LIGHTCLAWBOT_API_KEY` | lightclawbot 通道 API Key |
 
 ## 目录结构
 
@@ -130,7 +130,7 @@ rsi-wechat/
 | 用途 | 模型 |
 |------|------|
 | 全部 agent 文本 | `deepseek/deepseek-flash` |
-| 图片生成 | `bailian/wanx-1.2-t2i` |
+| 图片生成 | `glm/cogview-4` |
 
 ## 主素材库
 

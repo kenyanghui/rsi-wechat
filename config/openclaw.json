@@ -7,7 +7,7 @@
         "primary": "deepseek/deepseek-flash"
       },
       "imageGenerationModel": {
-        "primary": "bailian/wanx-1.2-t2i"
+        "primary": "glm/cogview-4"
       }
     },
     "list": [
@@ -52,14 +52,14 @@
           { "id": "deepseek-flash", "name": "DeepSeek V4.1 Flash", "input": ["image", "text"] }
         ]
       },
-      "bailian": {
-        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "apiKey": "{{BAILIAN_API_KEY}}",
+      "glm": {
+        "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+        "apiKey": "{{GLM_API_KEY}}",
         "api": "openai-completions",
         "models": [
-          { "id": "qwen-vl-plus", "name": "Qwen VL Plus" },
-          { "id": "qwen-vl-max", "name": "Qwen VL Max" },
-          { "id": "wanx-1.2-t2i", "name": "Wanx 1.2 T2I" }
+          { "id": "glm-4v-plus", "name": "GLM-4V Plus", "input": ["image", "text"] },
+          { "id": "glm-4v", "name": "GLM-4V", "input": ["image", "text"] },
+          { "id": "cogview-4", "name": "CogView-4" }
         ]
       }
     },
@@ -69,7 +69,7 @@
     "lightclawbot": {
       "accounts": {
         "{{LIGHTCLAWBOT_ACCOUNT_ID}}": {
-          "apiKey": "{{DEEPSEEK_API_KEY}}"
+          "apiKey": "{{LIGHTCLAWBOT_API_KEY}}"
         }
       },
       "site": "cn",
