@@ -11,7 +11,8 @@
 # 硬规则:
 #   - Markdown 文件 ≤ 10MB
 #   - add_knowledge 的 title 必须等于 file_name（含 .md 后缀）
-#   - 上传前后做重名检查（不支持替换，重名时加时间戳后缀）
+#   - 上传前调用 check_repeated_names 查重（不支持替换，重名时加时间戳后缀）
+#   - 幂等去重：已同步过的文章（含本地状态文件 + 远端查重）自动跳过，可重复执行
 set -uo pipefail
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -126,36 +127,113 @@ if [ "${DRY_RUN}" = "1" ]; then
   rm -f "${LIST_FILE}"; exit 0
 fi
 
-# ── 上传 ──
-UPLOAD_OK=0; UPLOAD_FAIL=0
-for f in "${STAGE}"/*.md; do
-  [ -f "$f" ] || continue
-  fname="$(basename "$f")"; size="$(stat -c%s "$f")"
-  # GATE: 大小限制
-  if [ "${size}" -gt $((10*1024*1024)) ]; then
-    echo "  ❌ 超过 10MB，跳过: ${fname}"; UPLOAD_FAIL=$((UPLOAD_FAIL+1)); continue
-  fi
-  cm=$(node "${IMA_SKILL_DIR}/ima_api.cjs" "openapi/wiki/v1/create_media" \
-    "{\"file_name\":\"${fname}\",\"file_size\":${size},\"content_type\":\"text/markdown\",\"knowledge_base_id\":\"${KB_ID}\",\"file_ext\":\"md\",\"folder_id\":\"${IMA_FOLDER_ID}\"}" \
-    "${OPTS}" 2>/dev/null)
-  code=$(echo "${cm}" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code','?'))" 2>/dev/null)
-  if [ "${code}" != "0" ]; then echo "  ❌ create_media 失败: ${fname}"; UPLOAD_FAIL=$((UPLOAD_FAIL+1)); continue; fi
-  get(){ echo "${cm}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['cos_credential']['$1'])"; }
-  MID=$(echo "${cm}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['media_id'])")
-  if ! node "${IMA_SKILL_DIR}/knowledge-base/scripts/cos-upload.cjs" \
-      --file "$f" --secret-id "$(get secret_id)" --secret-key "$(get secret_key)" --token "$(get token)" \
-      --bucket "$(get bucket_name)" --region "$(get region)" --cos-key "$(get cos_key)" \
-      --content-type "text/markdown" --start-time "$(get start_time)" --expired-time "$(get expired_time)" \
-      --timeout 300000 >/dev/null 2>&1; then
-    echo "  ❌ COS 上传失败: ${fname}"; UPLOAD_FAIL=$((UPLOAD_FAIL+1)); continue
-  fi
-  ak=$(node "${IMA_SKILL_DIR}/ima_api.cjs" "openapi/wiki/v1/add_knowledge" \
-    "{\"media_type\":7,\"media_id\":\"${MID}\",\"title\":\"${fname}\",\"knowledge_base_id\":\"${KB_ID}\",\"folder_id\":\"${IMA_FOLDER_ID}\",\"file_info\":{\"cos_key\":\"$(get cos_key)\",\"file_size\":${size},\"file_name\":\"${fname}\"}}" \
-    "${OPTS}" 2>/dev/null)
-  acode=$(echo "${ak}" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code','?'))" 2>/dev/null)
-  if [ "${acode}" != "0" ]; then echo "  ❌ add_knowledge 失败: ${fname}"; UPLOAD_FAIL=$((UPLOAD_FAIL+1)); continue; fi
-  echo "  ✅ 已同步: ${fname}"; UPLOAD_OK=$((UPLOAD_OK+1)); sleep 1
-done
+# ── 上传 ──（含：重名检查 + 幂等去重 + 失败分类）──
+SYNC_STATE="${STAGE}/../.synced_manifest.txt"   # 已同步清单（幂等去重用）
+mkdir -p "$(dirname "${SYNC_STATE}")"
+
+# 用 Python 内嵌执行：重名检查 → 幂等去重 → create_media → COS → add_knowledge
+python3 - "${STAGE}" "${SYNC_STATE}" "${KB_ID}" "${IMA_FOLDER_ID}" "${IMA_SKILL_DIR}" <<'PY'
+import sys, os, json, time, subprocess, hashlib
+
+stage, state_file, kb_id, folder_id, ima_dir = sys.argv[1:6]
+ima_api = os.path.join(ima_dir, "ima_api.cjs")
+cos_upload = os.path.join(ima_dir, "knowledge-base", "scripts", "cos-upload.cjs")
+
+client_id = open(os.path.expanduser("~/.config/ima/client_id")).read().strip()
+api_key = open(os.path.expanduser("~/.config/ima/api_key")).read().strip()
+opts = json.dumps({"clientId": client_id, "apiKey": api_key}, ensure_ascii=False)
+
+def api(path, body):
+    p = subprocess.run(["node", ima_api, path, json.dumps(body, ensure_ascii=False), opts],
+                       capture_output=True, text=True)
+    try:
+        return json.loads(p.stdout or "{}")
+    except:
+        return {"code": -1, "msg": (p.stderr or p.stdout or "unknown")[:200]}
+
+# 已同步状态（幂等去重）
+synced = set()
+if os.path.isfile(state_file):
+    synced = set(l.strip() for l in open(state_file) if l.strip())
+
+files = sorted(f for f in os.listdir(stage) if f.endswith(".md"))
+if not files:
+    print("未找到待同步 Markdown 文件")
+    sys.exit(0)
+
+# 1) 批量重名检查（对每个候选文件名）
+to_check = [{"name": f, "media_type": 7} for f in files]
+rep = api("openapi/wiki/v1/check_repeated_names",
+          {"params": to_check, "knowledge_base_id": kb_id, "folder_id": folder_id})
+rep_map = {}
+if rep.get("code") == 0:
+    for r in (rep.get("data", {}).get("results") or []):
+        rep_map[r.get("name")] = r.get("is_repeated", False)
+
+ok = fail = skipped = renamed = 0
+for f in files:
+    fpath = os.path.join(stage, f)
+    # 幂等：文件内容指纹已同步过 → 跳过
+    digest = hashlib.md5(open(fpath, "rb").read()).hexdigest()
+    if digest in synced:
+        print(f"  ⏭ 已同步（幂等跳过）: {f}"); skipped += 1; continue
+
+    size = os.path.getsize(fpath)
+    if size > 10*1024*1024:
+        print(f"  ❌ 超过 10MB 跳过: {f}"); fail += 1; continue
+
+    # 重名处理：远端已有同名 → 加时间戳后缀
+    final_name = f
+    if rep_map.get(f, False):
+        base, ext = os.path.splitext(f)
+        final_name = f"{base}_{time.strftime('%Y%m%d%H%M%S')}{ext}"
+        renamed += 1
+        print(f"  ⚠️ 同名已存在，改名重传: {f} → {final_name}")
+
+    # create_media
+    cm = api("openapi/wiki/v1/create_media", {
+        "file_name": final_name, "file_size": size, "content_type": "text/markdown",
+        "knowledge_base_id": kb_id, "file_ext": "md", "folder_id": folder_id})
+    if cm.get("code") != 0:
+        print(f"  ❌ create_media 失败: {f} ({cm.get('msg','')})"); fail += 1; continue
+    d = cm["data"]
+    mid = d.get("media_id", "")
+    cred = d.get("cos_credential", {})
+    cos_key = cred.get("cos_key", "")
+
+    # COS 上传
+    cp = subprocess.run(["node", cos_upload,
+        "--file", fpath,
+        "--secret-id", cred.get("secret_id",""),
+        "--secret-key", cred.get("secret_key",""),
+        "--token", cred.get("token",""),
+        "--bucket", cred.get("bucket_name",""),
+        "--region", cred.get("region",""),
+        "--cos-key", cos_key,
+        "--content-type", "text/markdown",
+        "--start-time", str(cred.get("start_time","")),
+        "--expired-time", str(cred.get("expired_time","")),
+        "--timeout", "300000"], capture_output=True, text=True)
+    if cp.returncode != 0:
+        print(f"  ❌ COS 上传失败: {final_name}"); fail += 1; continue
+
+    # add_knowledge
+    ak = api("openapi/wiki/v1/add_knowledge", {
+        "media_type": 7, "media_id": mid, "title": final_name,
+        "knowledge_base_id": kb_id, "folder_id": folder_id,
+        "file_info": {"cos_key": cos_key, "file_size": size, "file_name": final_name}})
+    if ak.get("code") != 0:
+        print(f"  ❌ add_knowledge 失败: {final_name} ({ak.get('msg','')})"); fail += 1; continue
+
+    # 记录同步指纹
+    with open(state_file, "a") as sf:
+        sf.write(digest + "\n")
+    print(f"  ✅ 已同步: {final_name}"); ok += 1
+    time.sleep(0.5)
+
+print(f"=== IMA 同步完成: 成功 {ok}，重名改名 {renamed}，跳过(幂等) {skipped}，失败 {fail} ===")
+sys.exit(1 if fail > 0 else 0)
+PY
+EXIT_CODE=$?
 rm -f "${LIST_FILE}"
-echo "=== IMA 同步完成: 成功 ${UPLOAD_OK} 篇，失败 ${UPLOAD_FAIL} 篇 ==="
-[ "${UPLOAD_FAIL}" -gt 0 ] && exit 1 || exit 0
+exit ${EXIT_CODE}

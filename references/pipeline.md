@@ -119,12 +119,14 @@
 1. 调用 `scripts/sync_to_ima.sh <日期> [产物目录] [--dry-run]`。
 2. 脚本从 pipeline 产物 `manifest.json` 或 `articles/<日期>*` 归档目录收集文章清单（自动去重）。
 3. 生成规范 Markdown（标题 + 作者/来源/归档日期 + 摘要 + 正文）。
-4. 以 `media_type=7`（Markdown）逐篇上传（`create_media` → COS 上传 → `add_knowledge`）。
+4. 以 `media_type=7`（Markdown）逐篇上传（`check_repeated_names` → `create_media` → COS 上传 → `add_knowledge`）。
 
 **纪律**：
 - 只同步**已进草稿箱**的文章；Markdown 单个文件 ≤ 10MB。
-- 上传前做重名检查；重名不支持替换（改为加时间戳后缀）。
+- 上传前调用 `check_repeated_names` 查重；重名不支持替换（自动加时间戳后缀）。
+- **幂等去重**：已同步过的文章（本地状态文件 `.synced_manifest.txt` 记录内容指纹 + 远端查重）自动跳过，可安全重复执行。
 - IMA 同步失败**不阻断**主流程（凭证缺失直接跳过），但需告警并记入台账。
+- 输出按「成功 / 重名改名 / 跳过(幂等) / 失败」分类汇总。
 
 **验收**：IMA「4.AI生产文章」文件夹出现当日各篇文章（`.md`）。
 
