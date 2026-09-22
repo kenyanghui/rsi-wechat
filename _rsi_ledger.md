@@ -51,3 +51,6 @@
 | 2026-09-20 | 修归档脚本分支 bug | `git push origin <branch>` 因本地分支为 master、远端规范为 main，误推创建野分支 master；改为 `git push origin <local>:main`（BRANCH 可用 RSI_REMOTE_BRANCH 覆盖） | 验证轮归档时远端 main 未更新、多出野分支 master |
 | 2026-09-20 | 流程由「每天 1 篇」改「每天 3 篇」 | cron + SKILL.md + pipeline.md + PIPELINE.md + README + templates 全链同步；3 篇全部进草稿箱供人工选择群发 | 用户要求：改成每天三篇入草稿箱，由人工选择发 |
 | 2026-09-20 | 新增 sync-ima 环节 | 流水线五步 → 六步（+sync-ima），新增 `scripts/sync_to_ima.sh`：把已发文章以 Markdown（media_type=7）同步进 IMA 知识库「AI量化杨老师」的「4.AI生产文章」文件夹（folder_7507449254775045） | 用户要求：生产出的文章再同步加入 IMA 知识库归档 |
+| 2026-09-23 | opencli 热点能力接入（环境就绪） | 安装 `@jackwener/opencli` v1.8.7；Browser Bridge 插件 v1.0.24 下载至 `~/.openclaw/opencli-extension` 并随 headless Chromium（CDP 9222）以 `--load-extension` 加载；`opencli doctor` 全绿；实测 `weibo hot` / `36kr hot` / `github-trending repos` / `web read` 可用；`weixin search` 受搜狗风控，设计为降级 web_search | 用户要求：补齐「热点搜索」能力 |
+| 2026-09-23 | 定时任务认知修正 | 确认 Gateway 中已存在每日编排 job `a1687335`（`20 7 * * *` @ Asia/Shanghai）与看门狗 job `c26bb402`；**判断定时是否存在须用 `openclaw cron list`，勿看旧的 `~/.openclaw/cron/jobs.json`（迁移文件，恒为空）** | 前次误判「定时未注册」 |
+| 2026-09-23 | rsi-wechat v1.2.0 升级提案（pending） | ①topic 双轨素材（IMA 存量 × 外部热点）②定时校验纪律 ③新增 `scripts/import_urls_to_ima.sh`（外部文章经 `import_urls` 入 IMA，形成「热点→入 IMA→再选题」回路）。提案 id `rsi-wechat-20260922-b9bf44336f`，待人工 apply | 用户要求：两步都补 + 新增获取文章加入 IMA |
