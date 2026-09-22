@@ -49,7 +49,10 @@ rsi-wechat/
 ├── articles/                 # 📦 已发布文章归档（同步到 GitHub，便于后续处理）
 │   └── <YYYY-MM-DD>/         # 每天一篇：article.md + meta.json + cover.png
 ├── references/
-│   └── pipeline.md           # 四步流水线详细编排（topic→writer→qa→format→archive）
+│   └── pipeline.md           # 八步流水线详细编排（热点采集→topic→writer→qa→format→import-urls→archive→sync-ima）
+├── config/
+│   ├── wecom-qr.png          # 企业微信获客活码（客户群活码，format 固定取此路径）
+│   └── wecom-qr.meta.json    # 活码元信息（类型/到期/替换记录）
 ├── templates/
 │   ├── 01_topics.md          # 选题 Brief 模板
 │   ├── 02_drafts.json        # 草稿 JSON 模板
@@ -61,7 +64,9 @@ rsi-wechat/
 └── scripts/
     ├── run_pipeline.sh       # 一键编排入口（可选，用于手动触发）
     ├── archive_article.sh    # 文章归档到 GitHub（主控执行）
-    └── sync_to_ima.sh        # 文章同步到 IMA 知识库「4.AI生产文章」（主控执行）
+    ├── sync_to_ima.sh        # 文章同步到 IMA 知识库「4.AI生产文章」（主控执行）
+    ├── import_urls_to_ima.sh # 外部文章/热点链接导入 IMA（v1.2.0 新增）
+    └── rotate_wecom_qr.sh    # 更换企微活码（备份→覆盖→更新 meta 与台账）
 ```
 
 ## 八步流水线（核心流程）
@@ -246,7 +251,9 @@ openclaw cron run <cron-job-id>
 - **主题/颜色**：`default` / `blue`
 - **作者**：`杨教练`
 - **安全红线**：只进草稿箱，绝不自动群发；投资内容必含风险提示
-- **获客二维码**：`config/wecom-qr.png`（企业微信承接），**有效期至 2026-09-30**，到期前后必须更换活码
+- **获客二维码**：`config/wecom-qr.png`（企业微信**客户群活码**，多群轮换、长期有效），format 固定取此路径自动复用；换码用 `scripts/rotate_wecom_qr.sh`
+  - 当前状态：过渡二维码，**有效期至 2026-09-30**，需更换为客户群活码（`--expires never`）
+  - 登记于 `_rsi_ledger.md`「有效期提醒」表；换码后状态转「✅ 已换新码」
 - **获客承接**：统一走企业微信；诱饵为「资料包 + 免费试用工具」双钩子；每篇文末注入 CTA 组件（`templates/format/cta.md`），二维码取 `config/wecom-qr.png`
 
 ## 详细参考
@@ -259,6 +266,7 @@ openclaw cron run <cron-job-id>
 | 质检评分模板 | `templates/03_qa_scores.md` |
 | 待发布队列模板 | `templates/04_publish_queue.md` |
 | 文末获客 CTA 组件 | `templates/format/cta.md` |
+| 更换企微活码脚本 | `scripts/rotate_wecom_qr.sh` |
 
 ---
 

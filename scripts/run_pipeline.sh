@@ -39,7 +39,9 @@ check "选题查重台账" "/root/agents/shared/SOURCE-LEDGER.md"
 check "文章归档目录" "$(dirname "$0")/../articles"
 check "归档脚本" "$(dirname "$0")/archive_article.sh"
 check "IMA 导入脚本" "$(dirname "$0")/import_urls_to_ima.sh"
+check "获客活码脚本" "$(dirname "$0")/rotate_wecom_qr.sh"
 check "获客二维码" "$(dirname "$0")/../config/wecom-qr.png"
+check "活码元信息" "$(dirname "$0")/../config/wecom-qr.meta.json"
 
 # 外部热点能力（v1.2.0）：opencli CLI + Browser Bridge 插件
 if command -v opencli >/dev/null 2>&1; then

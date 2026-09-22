@@ -1,0 +1,18 @@
+{
+  "type": "group_live_code",
+  "type_label": "客户群活码（多群轮换·长期有效）",
+  "file": "config/wecom-qr.png",
+  "source": "企业微信「客户联系 → 加入群聊 → 客户群活码」后台生成",
+  "reach_strategy": 2,
+  "auto_rotate_group": true,
+  "created_at": "2026-09-23",
+  "expires_at": "2026-09-30",
+  "never_expires": false,
+  "replaced_by": null,
+  "notes": [
+    "当前为过渡期二维码，2026-09-30 到期，需换成客户群活码。",
+    "客户群活码特性：不随群满/7天失效，自动换群，可长期复用；后台可按人数轮换多群。",
+    "替换方式：把新活码图片覆盖 config/wecom-qr.png，然后运行 scripts/rotate_wecom_qr.sh 更新本 meta 与台账。"
+  ],
+  "warn_days_before": 3
+}
