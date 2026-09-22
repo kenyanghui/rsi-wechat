@@ -46,7 +46,7 @@
 
 | 项目 | 文件/位置 | 生效日期 | 到期日期 | 处理动作 | 状态 |
 |------|-----------|----------|----------|----------|------|
-| 企业微信获客二维码 | `config/wecom-qr.png`（文末 CTA 承接） | 2026-09-20 | **2026-09-30** | 到期前更换新活码并重新生成文末引导图；建议改用「群活码」避免 7 天失效 | ⏳ 待处理 |
+| 企业微信获客二维码 | `config/wecom-qr.png`（文末 CTA 承接） | 2026-09-20 | **2026-09-30** | 到期前更换为**客户群活码**（`rotate_wecom_qr.sh <新码> --expires never`）；format 只认固定路径，换码即全链自动复用 | ⏳ 待更换为长期活码 |
 
 > 纪律：任何带有效期的素材（二维码/链接/活动）必须登记本表；到期前至少 2 天处理，避免文章里挂失效码。
 | 日期 | 改进项 | 内容 | 触发原因 |
@@ -60,4 +60,5 @@
 | 2026-09-23 | opencli 热点能力接入（环境就绪） | 安装 `@jackwener/opencli` v1.8.7；Browser Bridge 插件 v1.0.24 下载至 `~/.openclaw/opencli-extension` 并随 headless Chromium（CDP 9222）以 `--load-extension` 加载；`opencli doctor` 全绿；实测 `weibo hot` / `36kr hot` / `github-trending repos` / `web read` 可用；`weixin search` 受搜狗风控，设计为降级 web_search | 用户要求：补齐「热点搜索」能力 |
 | 2026-09-23 | 定时任务认知修正 | 确认 Gateway 中已存在每日编排 job `a1687335`（`20 7 * * *` @ Asia/Shanghai）与看门狗 job `c26bb402`；**判断定时是否存在须用 `openclaw cron list`，勿看旧的 `~/.openclaw/cron/jobs.json`（迁移文件，恒为空）** | 前次误判「定时未注册」 |
 | 2026-09-23 | rsi-wechat v1.2.0 升级提案（pending） | ①topic 双轨素材（IMA 存量 × 外部热点）②定时校验纪律 ③新增 `scripts/import_urls_to_ima.sh`（外部文章经 `import_urls` 入 IMA，形成「热点→入 IMA→再选题」回路）。提案 id `rsi-wechat-20260922-b9bf44336f`，待人工 apply | 用户要求：两步都补 + 新增获取文章加入 IMA |
+| 2026-09-23 | 换活码接进流水线 | 新增 `config/wecom-qr.meta.json`（活码元信息）+ `scripts/rotate_wecom_qr.sh`（备份旧码→覆盖→更新 meta 与台账）；format 环节固定只认 `config/wecom-qr.png`，换码后**无需改文章/模板**即自动复用；pipeline.md 新增「活码自动复用」与「有效期感知（过期/3天内到期标记）」规则 | 用户要求：换活码排进流水线、format 自动复用新码 |
 | 2026-09-23 | v1.2.0 已 apply 落地 | 线上 `skills/rsi-wechat/` 已更新：SKILL.md 升 v1.2.0（八步流水线+热点采集章节+import-urls）、references/pipeline.md（Step0.5/Step4.5）、templates/01_topics.md（源清单增热度列）、scripts/run_pipeline.sh（依赖检查）、新增 scripts/import_urls_to_ima.sh（已 dry-run 验证） | 用户明确批准 apply |
