@@ -1,20 +1,23 @@
 {
   "$comment": "rsi-wechat 质检规则引擎（v1.4.0 新增）。qa agent 必须按本 rubric 打分：任一 veto 触发即不通过（分数再高也退回 writer）；总分 < min_total 退回。规则演进请改本文件并在台账「演进记录」留痕，勿散落进 agent 提示词。",
-  "version": "1.4.0",
+  "version": "1.5.1",
   "min_total": 85,
   "max_total": 100,
   "dimensions": [
-    {"id": "hook", "name": "标题钩子", "weight": 20,
+    {"id": "hook", "name": "标题钩子", "weight": 18,
      "criteria": "15 字内主标题制造好奇缺口；可用反问/否定重构/痛点直给句式（参考台账风格卡）",
      "deduct": "主标题 >30 字扣 5；无钩子平铺直叙扣 8"},
-    {"id": "value", "name": "干货密度", "weight": 25,
+    {"id": "value", "name": "干货密度", "weight": 22,
      "criteria": "每 300 字至少 1 个可执行方法/反常识观点；观点必须来自自有知识库素材，热点仅作切入钩子",
      "deduct": "空心化（通篇蹭热点无自有观点）直接触发 veto:content_hollow"},
-    {"id": "structure", "name": "结构节奏", "weight": 15,
+    {"id": "structure", "name": "结构节奏", "weight": 13,
      "criteria": "开头 3 行内入题；小标题分段 ≤400 字/段；结尾有明确 CTA 或金句收束"},
-    {"id": "credibility", "name": "合规与可信", "weight": 20,
+    {"id": "credibility", "name": "合规与可信", "weight": 17,
      "criteria": "无收益承诺、无绝对化用语（最好/第一/稳赚）、无未经验证数据",
      "deduct": "每处绝对化用语扣 3；收益承诺直接触发 veto:compliance"},
+    {"id": "facts", "name": "事实锚定", "weight": 10,
+     "criteria": "（v1.5.1 新增，借鉴 wewrite-review claims 核对）文中每个具体数字/日期/机构名/引述都必须能对应到源素材（知识库条目/热点原文/作者确认）；不确定的表述改为限定语（「一般而言」「历史数据显示」）；禁止用模型记忆补事实洞",
+     "deduct": "每处无源具体事实扣 3；虚构数据/编造引述直接触发 veto:unsourced_claim"},
     {"id": "readability", "name": "移动端可读性", "weight": 10,
      "criteria": "段落 ≤5 行；关键句加粗；配图位合理（每 800-1200 字 1 图）"},
     {"id": "cta", "name": "获客组件", "weight": 10,
@@ -23,7 +26,8 @@
   "vetoes": [
     {"id": "compliance", "desc": "含收益承诺/违规用语 —— 一票否决"},
     {"id": "content_hollow", "desc": "内容空心化：主体观点非来自自有知识库 —— 一票否决"},
-    {"id": "source_dup", "desc": "主素材命中台账避重规则（7 天内复用或累计≥2 次）—— 一票否决，退回 topic"}
+    {"id": "source_dup", "desc": "主素材命中台账避重规则（7 天内复用或累计≥2 次）—— 一票否决，退回 topic"},
+    {"id": "unsourced_claim", "desc": "虚构数据/编造引述/无源具体事实拒改（v1.5.1 新增，金融内容红线）—— 一票否决"}
   ],
   "output_contract": {
     "score_file": "03_qa_scores.md",
