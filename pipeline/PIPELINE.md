@@ -30,6 +30,36 @@ articles/<YYYY-MM-DD>-3/     # 第 3 篇
 
 调用 `scripts/archive_article.sh <日期> <产物目录>` 完成收集 → commit → push（支持同日多篇，优先读 `format/manifest.json`，内置推送重试）。
 
+
+## 编排可靠性硬规则（v1.5.2，优先级最高）
+
+> 背景：2026-09-21/23/24 三次断链，根因是网关子代理「完成事件(announce)偶发丢失」× 主控被动等待无兜底。以下三条为强制契约，全文与 `/root/agents/shared/PIPELINE.md` 保持同步。
+
+### 1. 禁止被动等待（防 announce 丢失）
+
+spawn 子代理后，主控**不得以「等待完成事件」结束 turn**。必须在**同一 turn 内用 exec 轮询产物文件**（产物落盘是唯一可信依据，announce 只作提前推进参考）：
+
+```bash
+for i in $(seq 1 60); do
+  ok=1
+  for p in p1 p2 p3; do
+    [ -s "/root/agents/shared/pipeline/<日期>/$p/02_drafts.json" ] || ok=0
+  done
+  [ "$ok" = 1 ] && break
+  sleep 30
+done
+```
+
+超时（30 分钟）：记录 `_run.log`，对该篇**补 spawn 一次**；仍失败则写 `_status.json` 的 `finished:false` 并向用户告警，**不得静默退出**。
+
+### 2. 断点续跑（幂等）
+
+主控每次启动必须先盘点：① 扫描**最近 2 天**产物目录；② 检查每天每篇链条 `01→02→03→format/manifest.json`；③ 存在无 `finished:true` 的未完成目录 → 从断点续跑，缺哪步补哪步，**禁止覆盖重写**已验证产物；④ **续跑优先、不双跑**——本轮续跑后当天全新目录不再新开全量任务，留给下一个定时触发。
+
+### 3. 完成标记（看门狗依据）
+
+整轮结束（成功或可控失败）必须更新 `_status.json`：`finished:true/false` + `stages` 各篇进度 + `articles_pushed`。看门狗 `scripts/watchdog_pipeline.sh`（v1.5.2）**只认磁盘标记**，不信任 cron 表面状态（主控可能「正常结束」但实际断链）。
+
 ## 产物目录
 
 ```

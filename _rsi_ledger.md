@@ -11,6 +11,10 @@
 | 2026-09-20 | 21天AI量化深度训练营（IMA笔记） | 1 | 2026-09-20 | 第3轮 p3 主素材（方法论层）；含内部定价，只提炼方法 |
 | 2026-09-20 | AI量化投资系统搭建方案 v1.0（IMA笔记） | 1 | 2026-09-20 | 六层分形架构，可作辅素材复用 |
 | 2026-09-20 | GIM 研究 XALPHA（IMA收藏） | 1 | 2026-09-20 | AI量化投资人经验积累机制 |
+| 2026-09-24 | 量化金融史（IMA微信文章） | 1 | 2026-09-24 | p1 认知层主素材：优势的「解释/付费逻辑」 |
+| 2026-09-24 | 市面炒股工具类获客钩子（IMA笔记） | 1 | 2026-09-24 | p2 商业层主素材A：16种获客钩子结论/诊断二分 |
+| 2026-09-24 | AI量化教育盈利链路与获客逻辑（IMA笔记） | 1 | 2026-09-24 | p2 商业层主素材B：定价权与获客逻辑迁移 |
+| 2026-09-24 | 量化顶尖思路（IMA笔记） | 1 | 2026-09-24 | p3 心智层主素材：先想怎么死/死亡清单/乐观偏差 |
 
 ## 2. 风格偏好（哪些标题/调性效果最好）
 | 日期 | 标题模式 | 质检分 | 人工反馈 | 结论 |
@@ -43,6 +47,7 @@
 | 第1轮 | 2026-09-20 | — → 91 | 认知层角度（执行 vs 判断）讲透，结构完整 | 补封面素材能力 |
 | 第2轮 | 2026-09-20 | 91 → 89 | 商业/心智层角度，与首篇形成两翼；标题收敛、绝对化用语清零 | ①换主素材（避免源重复）②补正式封面素材 ③探索 JSON 归档编号化 |
 | 第3轮（验证轮·3篇并行） | 2026-09-20 | 平均 88（p1 89 / p2 90 / p3 85） | 首次跑通「每天 3 篇」模式：3 篇互不重复角度（思维层/心智层/方法论层）均过审入草稿箱；多篇并发编排 + 自动编号归档落地 | ①修子任务重复编排导致草稿重复的问题（已人工去重为 3 条）②3 篇角度差异化调度要更早锁定，避免 topic 反查③发布轮次幂等（同一篇不重复推草稿） |
+| 第4轮（9-24） | 2026-09-24 | 平均 86（p1 86 / p2 88 / p3 85） | 三翼组合（认知/商业/心智）严格互斥，三个主素材全新无重；p1 因图像生成 provider 无 key 早退，主控按可靠性规则补 spawn 一次即恢复，证明「产物落盘轮询 + 断点补跑」机制有效 | ①看门狗已升级 v1.5.0/1.5.1/1.5.2（产物完整性判定，不信任 cron 表面状态）②图像生成缺 provider，format 环节需内建 PIL 本地合成兜底（不要尝试自动下依赖）③归档 push 遇「fetch first」需先 rebase origin/main 再推 |
 
 ## 6. 有效期提醒（Expiry Watch）
 
@@ -76,3 +81,5 @@
 | 2026-09-23 | rsi-wechat v1.2.0 升级提案（pending） | ①topic 双轨素材（IMA 存量 × 外部热点）②定时校验纪律 ③新增 `scripts/import_urls_to_ima.sh`（外部文章经 `import_urls` 入 IMA，形成「热点→入 IMA→再选题」回路）。提案 id `rsi-wechat-20260922-b9bf44336f`，待人工 apply | 用户要求：两步都补 + 新增获取文章加入 IMA |
 | 2026-09-23 | 换活码接进流水线 | 新增 `config/wecom-qr.meta.json`（活码元信息）+ `scripts/rotate_wecom_qr.sh`（备份旧码→覆盖→更新 meta 与台账）；format 环节固定只认 `config/wecom-qr.png`，换码后**无需改文章/模板**即自动复用；pipeline.md 新增「活码自动复用」与「有效期感知（过期/3天内到期标记）」规则 | 用户要求：换活码排进流水线、format 自动复用新码 |
 | 2026-09-23 | v1.2.0 已 apply 落地 | 线上 `skills/rsi-wechat/` 已更新：SKILL.md 升 v1.2.0（八步流水线+热点采集章节+import-urls）、references/pipeline.md（Step0.5/Step4.5）、templates/01_topics.md（源清单增热度列）、scripts/run_pipeline.sh（依赖检查）、新增 scripts/import_urls_to_ima.sh（已 dry-run 验证） | 用户明确批准 apply |
+| 2026-09-24 | 图像生成 provider 缺失处置 | 本机无可用图像生成 provider（baoyu-image-gen 报「No API key found」、image_generate 仅 minimax 未配置），format 环节改用 PIL 本地 flat-vector 合成封面/插图，ffmpeg(libwebp) 做 WebP 压缩；p1 首次早退（无 media_id），主控补 spawn 一次恢复 | format 环节需内建 PIL/ffmpeg 兜底，不依赖图像生成 API 与 baoyu-compress-image 的 sharp 自动下载 |
+| 2026-09-24 | 归档远程与 push 流程修正 | 发现 skill 内 remote 有两套（origin=github、eightarms=内网）；archive_article.sh 硬编码 `REPO_REMOTE=origin` 正确指向 github，但 push 时遇「fetch first」需先 `git rebase origin/main`；watchdog_pipeline.sh 存在局部升级冲突，已采用远端版本解决 | 归档 push 失败重试前需先 fetch+rebase；watchdog 脚本升级另起提交，不混入文章归档 |

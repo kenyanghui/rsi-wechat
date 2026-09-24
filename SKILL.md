@@ -5,7 +5,7 @@ aliases:
   - 微信公众号内容管线
   - rsi内容管线
 description: 正行明熙「RSI 自进化」微信公众号内容运营流水线。以 RSI（Recursive Self-Improvement，递归自改进）理念驱动：AI 参与改进自身内容研发，形成"能力越强→内容越好→能力更强"的反馈回路。整合九步内容流水线（热点采集→素材运营→topic→writer→qa→format→import-urls→archive→sync-ima）、9 个 baoyu 图文能力（封面图/文章插图/通用图像生成/PPT/Markdown转HTML/图片压缩/公众号发文/URL转Markdown/小红书图片），并将每次发布的文章同步归档到 GitHub；从 IMA 知识库「AI量化杨老师」挖掘素材，自动产出公众号爆款长文并推送到草稿箱（人工闸门前停）。含知识库运营（多源采集精品、查重、按主题归档、防落根目录）。Use when user mentions "发公众号", "公众号文章", "内容流水线", "rsi-wechat", "每天三篇", "每天一篇爆款", "文章归档", "RSI 自进化", "采集入库", "知识库归档", "整理知识库".
-version: 1.5.0
+version: 1.5.2
 platforms: [linux]
 prerequisites:
   commands: [openclaw, opencli]
@@ -125,6 +125,7 @@ Step0.5 热点采集 → Step0.7 素材采集与知识库运营 → topic（选�
 
 - 前四个环节各是一个独立 agent（`topic`/`writer`/`qa`/`format`），由主控依次 `sessions_spawn` 编排。
 - Step0.5（热点采集）、Step0.7（素材运营）、Step4.5（import-urls）、archive、sync-ima 由**主控**执行。
+- **编排可靠性硬规则（v1.5.2，优先级最高）**：① 禁止被动等待——spawn 后必须在 turn 内 exec 轮询产物落盘（30s×60），超时补 spawn 一次；② 断点续跑——启动先盘点近 2 天产物链，缺哪步补哪步，禁止覆盖已验证产物，续跑优先不双跑；③ 完成标记——整轮结束必须写 `_status.json` 的 `finished:true/false`，看门狗只认磁盘标记。详见 `pipeline/PIPELINE.md#编排可靠性硬规则`。
 - **Step 7 复盘（retrospective，v1.4.0 固化，不可跳过）**：回写台账 + 人工修正 diff 采集（AI 终稿 vs 实发版，回填「人工修正记录」清零「待反馈」）+ 跑 `scripts/check_drift.sh` 漂移自检 + `scripts/fetch_stats.sh` 发布数据回流（阅读/点赞 → meta.json + 台账「发布数据」表）+ 用户简报。
 
 详细编排见 `references/pipeline.md`。

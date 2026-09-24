@@ -40,10 +40,13 @@
   └── Step 7：回写 RSI 台账 + 简报
 ```
 
+> **v1.5.2 可靠性**：spawn 同阶段 3 个子代理后**立即进入 turn 内轮询**（30s×60 等产物落盘），禁止以「等待事件」结束回合——网关 announce 偶发丢失会让主控永久睡死（2026-09-21/23/24 三次断链根因）。
+
 ## Step 0：预热（主控执行）
 
 > **Preflight 纪律（v1.5.0 新增，借鉴 Draco）**：以下检查必须**实测**，禁止凭记忆/推断跳过。任一项失败 → 按「失败处理」降级或中止，不静默带病起跑。
 
+0. **断点盘点（v1.5.2 强制）**：扫描最近 2 天 `/root/agents/shared/pipeline/<日期>/`，读 `_status.json`——存在 `finished!=true` 且有产物 → 本轮为断点续跑：逐篇检查 `01→02→03→format/manifest.json` 链条，**缺哪步补哪步，已存在产物直接复用、禁止覆盖重写**；续跑优先不双跑（当天全新目录留待下次定时触发）。看门狗 `scripts/watchdog_pipeline.sh` 会持续触发直至 `finished:true`。
 1. **日期实测**：跑 `date '+%Y-%m-%d %H:%M %Z'` 确认当天日期与时区（Asia/Shanghai），不要凭上下文推断「今天」。
 2. **凭证探测**：IMA 凭证（token/知识库 ID）可读且有效（探测失败 → Step 0.5/4.5/6 相关动作降级跳过并告警，不阻断 topic→writer→qa→format 主链）。
 3. **cron 校验（v1.2.0 纪律）**：以 `openclaw cron list` 实时输出为准，勿看旧 `~/.openclaw/cron/jobs.json`。

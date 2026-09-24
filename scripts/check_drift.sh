@@ -118,6 +118,29 @@ for f in SKILL.md README.md _rsi_ledger.md pipeline/MANIFEST.json pipeline/PIPEL
   fi
 done
 
+# ── G6 编排可靠性口径（v1.5.2）──
+echo ""
+echo "--- G6 编排可靠性口径 ---"
+G6_MISSES=0
+for f in pipeline/PIPELINE.md references/pipeline.md SKILL.md; do
+  path="${SKILL_DIR}/${f}"
+  [ -f "${path}" ] || continue
+  if grep -q "禁止被动等待" "${path}" || grep -q "v1.5.2 可靠性" "${path}" || grep -q "编排可靠性硬规则" "${path}"; then
+    ok "可靠性硬规则口径存在: ${f}"
+  else
+    err "缺 v1.5.2 可靠性硬规则口径: ${f}"
+    G6_MISSES=$((G6_MISSES+1))
+  fi
+done
+WD="${SKILL_DIR}/scripts/watchdog_pipeline.sh"
+if [ -f "${WD}" ]; then
+  if grep -q "产物完整性检查" "${WD}" && grep -q "finished" "${WD}"; then
+    ok "watchdog v1.5.2 产物完整性检查在位"
+  else
+    err "watchdog_pipeline.sh 未升级到 v1.5.2（缺产物完整性检查/finished 标记）"
+  fi
+fi
+
 # ── 汇总 ──
 echo ""
 echo "=== 结果: $([ ${ERRORS} -eq 0 ] && echo PASS || echo FAIL) — ${ERRORS} error(s), ${WARNINGS} warning(s) ==="

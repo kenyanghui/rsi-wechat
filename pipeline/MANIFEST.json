@@ -1,45 +1,138 @@
 {
-  "$comment": "rsi-wechat SSOT 注册表（v1.4.0 起）。版本号、步骤数、环节清单以本文件为唯一事实源；scripts/check_drift.sh 校验各方文档与本表一致，防止描述漂移。v1.5.0：借鉴 Draco-Skills-Collection，新增 routing/workflow_router、contracts/briefing_output（简报输出契约）、truth_first（减产规则）、preflight（Step 0 实测纪律）。",
-  "version": "1.5.0",
+  "$comment": "rsi-wechat SSOT 注册表（v1.4.0 起）。版本号、步骤数、环节清单以本文件为唯一事实源；scripts/check_drift.sh 校验各方文档与本表一致，防止描述漂移。v1.5.0：借鉴 Draco-Skills-Collection，新增 routing/workflow_router、contracts/briefing_output（简报输出契约）、truth_first（减产规则）、preflight（Step 0 实测纪律）。 v1.5.2：断链复盘落地——新增 orchestration_reliability（禁止被动等待/断点续跑/完成标记），check_drift 新增 G6。",
+  "version": "1.5.2",
   "daily_mode": {
     "articles_per_day": 3,
     "cron": "07:20 daily",
-    "product_dirs": ["<date>/p1", "<date>/p2", "<date>/p3"]
+    "product_dirs": [
+      "<date>/p1",
+      "<date>/p2",
+      "<date>/p3"
+    ]
   },
   "pipeline_steps": [
-    {"id": "0.5", "name": "热点采集", "actor": "主控", "output": "热点候选池"},
-    {"id": "0.7", "name": "素材采集与知识库运营", "actor": "主控", "output": "精品入库+查重+主题归位"},
-    {"id": "1", "name": "topic", "actor": "agent", "output": "01_topics.md"},
-    {"id": "2", "name": "writer", "actor": "agent", "output": "02_drafts.json"},
-    {"id": "3", "name": "qa", "actor": "agent", "output": "03_qa_scores.md", "rubric": "config/qa-rubric.json"},
-    {"id": "4", "name": "format", "actor": "agent", "output": "04_publish_queue.md + 草稿箱"},
-    {"id": "4.5", "name": "import-urls", "actor": "主控", "output": "外部文章入 IMA"},
-    {"id": "5", "name": "archive", "actor": "主控", "output": "articles/<date>[-n]/ + GitHub"},
-    {"id": "6", "name": "sync-ima", "actor": "主控", "output": "IMA「4.AI生产文章」"},
-    {"id": "7", "name": "retrospective", "actor": "主控", "output": "_rsi_ledger.md 回写 + 简报"}
+    {
+      "id": "0.5",
+      "name": "热点采集",
+      "actor": "主控",
+      "output": "热点候选池"
+    },
+    {
+      "id": "0.7",
+      "name": "素材采集与知识库运营",
+      "actor": "主控",
+      "output": "精品入库+查重+主题归位"
+    },
+    {
+      "id": "1",
+      "name": "topic",
+      "actor": "agent",
+      "output": "01_topics.md"
+    },
+    {
+      "id": "2",
+      "name": "writer",
+      "actor": "agent",
+      "output": "02_drafts.json"
+    },
+    {
+      "id": "3",
+      "name": "qa",
+      "actor": "agent",
+      "output": "03_qa_scores.md",
+      "rubric": "config/qa-rubric.json"
+    },
+    {
+      "id": "4",
+      "name": "format",
+      "actor": "agent",
+      "output": "04_publish_queue.md + 草稿箱"
+    },
+    {
+      "id": "4.5",
+      "name": "import-urls",
+      "actor": "主控",
+      "output": "外部文章入 IMA"
+    },
+    {
+      "id": "5",
+      "name": "archive",
+      "actor": "主控",
+      "output": "articles/<date>[-n]/ + GitHub"
+    },
+    {
+      "id": "6",
+      "name": "sync-ima",
+      "actor": "主控",
+      "output": "IMA「4.AI生产文章」"
+    },
+    {
+      "id": "7",
+      "name": "retrospective",
+      "actor": "主控",
+      "output": "_rsi_ledger.md 回写 + 简报"
+    }
   ],
   "step_count": 10,
   "$note_step_count": "含 Step7 复盘共 10 个环节；对外叙述「九步流水线」时不含 Step7（复盘为元环节），check_drift 按九步口径校验正文的步骤链。",
-  "agents": ["topic", "writer", "qa", "format"],
+  "agents": [
+    "topic",
+    "writer",
+    "qa",
+    "format"
+  ],
   "routing": {
     "$comment": "v1.5.0 借鉴 Draco wechat-publishing-workflow：主 SKILL.md 为类级入口（Workflow Router），执行细节下沉到 references/scripts。",
     "entry": "SKILL.md",
     "routes": [
-      {"intent": "跑完整流水线/每日三篇", "target": "references/pipeline.md + scripts/run_pipeline.sh"},
-      {"intent": "素材采集/整理知识库", "target": "references/pipeline.md#step-07 + scripts/import_urls_to_ima.sh"},
-      {"intent": "文章归档 GitHub", "target": "scripts/archive_article.sh"},
-      {"intent": "同步 IMA 知识库", "target": "scripts/sync_to_ima.sh + references/ima-api-mechanics.md"},
-      {"intent": "找 IMA 文件夹 ID", "target": "references/folder-map.md"},
-      {"intent": "换企微获客活码", "target": "scripts/rotate_wecom_qr.sh"},
-      {"intent": "发布数据回流", "target": "scripts/fetch_stats.sh"},
-      {"intent": "版本/口径漂移排查", "target": "scripts/check_drift.sh（SSOT: pipeline/MANIFEST.json）"}
+      {
+        "intent": "跑完整流水线/每日三篇",
+        "target": "references/pipeline.md + scripts/run_pipeline.sh"
+      },
+      {
+        "intent": "素材采集/整理知识库",
+        "target": "references/pipeline.md#step-07 + scripts/import_urls_to_ima.sh"
+      },
+      {
+        "intent": "文章归档 GitHub",
+        "target": "scripts/archive_article.sh"
+      },
+      {
+        "intent": "同步 IMA 知识库",
+        "target": "scripts/sync_to_ima.sh + references/ima-api-mechanics.md"
+      },
+      {
+        "intent": "找 IMA 文件夹 ID",
+        "target": "references/folder-map.md"
+      },
+      {
+        "intent": "换企微获客活码",
+        "target": "scripts/rotate_wecom_qr.sh"
+      },
+      {
+        "intent": "发布数据回流",
+        "target": "scripts/fetch_stats.sh"
+      },
+      {
+        "intent": "版本/口径漂移排查",
+        "target": "scripts/check_drift.sh（SSOT: pipeline/MANIFEST.json）"
+      }
     ]
   },
   "contracts": {
     "$comment": "v1.5.0 输出契约（借鉴 Draco daily-ai-agent-aigc-top-news Output Contract）：固定字段 + 部分失败必须明示。",
     "briefing_output": {
       "where": "references/pipeline.md#step-7",
-      "required_fields": ["产出(计划/实际+减产原因)", "选题与质检", "待发布清单(media_id)", "归档状态(GitHub/IMA)", "素材动态", "人工修正diff摘要", "漂移自检", "发布数据增量"],
+      "required_fields": [
+        "产出(计划/实际+减产原因)",
+        "选题与质检",
+        "待发布清单(media_id)",
+        "归档状态(GitHub/IMA)",
+        "素材动态",
+        "人工修正diff摘要",
+        "漂移自检",
+        "发布数据增量"
+      ],
       "partial_failure_rule": "任一环节失败（归档/同步/导入）必须在简报中明示，不允许只报喜"
     }
   },
@@ -51,7 +144,11 @@
   },
   "preflight": {
     "$comment": "v1.5.0 Step 0 实测纪律：date 实测 + 凭证探测 + cron 以 openclaw cron list 为准。",
-    "required_checks": ["date 实测(Asia/Shanghai)", "IMA 凭证探测(失败降级不阻断)", "openclaw cron list 实时校验"]
+    "required_checks": [
+      "date 实测(Asia/Shanghai)",
+      "IMA 凭证探测(失败降级不阻断)",
+      "openclaw cron list 实时校验"
+    ]
   },
   "artifacts": {
     "ledger": "_rsi_ledger.md",
@@ -59,13 +156,57 @@
     "drift_guard": "scripts/check_drift.sh",
     "stats_reflow": "scripts/fetch_stats.sh",
     "qr_meta": "config/wecom-qr.meta.json",
-    "references": ["references/pipeline.md", "references/folder-map.md", "references/ima-api-mechanics.md"]
+    "references": [
+      "references/pipeline.md",
+      "references/folder-map.md",
+      "references/ima-api-mechanics.md"
+    ]
   },
   "drift_guards": {
     "step_chain_keyword": "热点采集",
-    "step_chain_expected_in": ["SKILL.md", "references/pipeline.md", "pipeline/PIPELINE.md", "README.md"],
-    "banned_words": {"SKILL.md": ["四步", "五步"], "pipeline/PIPELINE.md": ["五步"], "references/pipeline.md": ["四步", "五步"]},
-    "ledger_required_sections": ["## 1.", "## 2.", "## 3.", "## 4.", "## 5.", "## 6.", "## 7.", "## 8."],
+    "step_chain_expected_in": [
+      "SKILL.md",
+      "references/pipeline.md",
+      "pipeline/PIPELINE.md",
+      "README.md"
+    ],
+    "banned_words": {
+      "SKILL.md": [
+        "四步",
+        "五步"
+      ],
+      "pipeline/PIPELINE.md": [
+        "五步"
+      ],
+      "references/pipeline.md": [
+        "四步",
+        "五步"
+      ]
+    },
+    "ledger_required_sections": [
+      "## 1.",
+      "## 2.",
+      "## 3.",
+      "## 4.",
+      "## 5.",
+      "## 6.",
+      "## 7.",
+      "## 8."
+    ],
     "archive_gap_warn_days": 2
+  },
+  "orchestration_reliability": {
+    "$comment": "v1.5.2 复盘 2026-09-21/23/24 三次断链：网关子代理完成事件(announce)偶发丢失 × 主控被动等待无兜底。三条硬规则写入 /root/agents/shared/PIPELINE.md 与主 cron payload。",
+    "rules": [
+      "no_passive_wait: spawn 后禁止以等待结束 turn，必须 turn 内 exec 轮询产物落盘（30s×60，超时补 spawn 一次）",
+      "resume_from_breakpoint: 启动先盘点近 2 天产物链，缺哪步补哪步，禁止覆盖已验证产物；续跑优先不双跑",
+      "finished_marker: 整轮结束必须写 _status.json finished:true/false + stages；watchdog 只认磁盘标记，不信任 cron 表面状态"
+    ],
+    "docs": [
+      "/root/agents/shared/PIPELINE.md#编排可靠性硬规则",
+      "pipeline/PIPELINE.md",
+      "references/pipeline.md"
+    ],
+    "watchdog": "scripts/watchdog_pipeline.sh (v1.5.2 产物完整性检查)"
   }
 }
