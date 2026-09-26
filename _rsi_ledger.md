@@ -97,3 +97,8 @@
 | 2026-09-24 | 图像生成 provider 缺失处置 | 本机无可用图像生成 provider（baoyu-image-gen 报「No API key found」、image_generate 仅 minimax 未配置），format 环节改用 PIL 本地 flat-vector 合成封面/插图，ffmpeg(libwebp) 做 WebP 压缩；p1 首次早退（无 media_id），主控补 spawn 一次恢复 | format 环节需内建 PIL/ffmpeg 兜底，不依赖图像生成 API 与 baoyu-compress-image 的 sharp 自动下载 |
 | 2026-09-24 | 归档远程与 push 流程修正 | 发现 skill 内 remote 有两套（origin=github、eightarms=内网）；archive_article.sh 硬编码 `REPO_REMOTE=origin` 正确指向 github，但 push 时遇「fetch first」需先 `git rebase origin/main`；watchdog_pipeline.sh 存在局部升级冲突，已采用远端版本解决 | 归档 push 失败重试前需先 fetch+rebase；watchdog 脚本升级另起提交，不混入文章归档 |
 | 2026-09-25 | sync_to_ima.sh manifest 路径 bug 记录 | sync_to_ima.sh 读 p*/format/manifest.json 的 `article` 字段（存相对路径 `format/article.md`），但 Python 用 `os.path.isfile(src)` 直接判读相对路径（相对 CWD 而非 manifest 目录），导致第1次同步「发现2篇却未找到Markdown文件」；本次绕过：改用归档目录 `articles/<date>*`（绝对路径+frontmatter 完整）成功 3/3 | 需修 sync_to_ima.sh：解析 manifest article 路径时要 `os.path.join(manifest所在目录, article)` 或转绝对路径后再判 isfile |
+
+## 5b. 第7轮（9-27）快照补充
+| 轮次 | 日期 | 质检分变化 | 比上轮强在哪 | 下轮重点 |
+|------|------|-----------|-------------|---------|
+| 第7轮（9-27） | 2026-09-27 | 平均 89（p1 84→94 复检/p2 85/p3 88） | p1 首轮 84 打回（抛硬币数学错误:2⁻²⁰≈1e6错误），writer 一改即 94，证明「事实锚定」维度守住数学严谨性；三主素材全首次（匿名AI量化谎言/OpenClaw淘金热/刘润战胜基因）；IMA同步3/3成功 | ①archive_article.sh 未把 manifest 的 media_id 写进 meta.json（空串，需修脚本提取）②sync_to_ima.sh manifest 相对路径 bug 仍存（本轮继续归档目录 workaround 成功）③GitHub push 本轮超时（网络到 github.com 不可达，commit 已本地完成 9e14202 待补推）|
