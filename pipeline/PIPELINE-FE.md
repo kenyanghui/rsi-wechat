@@ -29,7 +29,7 @@ Step -1 素材采集与知识库喂养（主控执行，最先跑，≤40 分钟
 ```
 1. 提取兴趣点 → 读库内现有内容（get_knowledge_list，条目看 title）+ 按「受众与选题方向」
               提炼 6-10 个本轮兴趣点关键词 → 00_search/interest_profile.md
-2. 微信搜寻   → 每个兴趣点 web_search「site:mp.weixin.qq.com <关键词>」（每点 2-3 个查询变体），
+2. 微信搜寻   → 每个兴趣点 bash scripts/weixin_search.sh "<关键词>" 00_search/candidates.txt 10（Tavily 限定 mp.weixin.qq.com，自动重试；每点 2-3 个关键词变体分次调用）（每点 2-3 个查询变体），
               收集 mp.weixin.qq.com/s/ 文章链接，候选池 ≥40 条 → 00_search/candidates.txt
 3. 查重       → 剔除历史已导入 URL（IMPORT_STATE 状态文件）与本轮重复
 4. 归类       → 按下方「素材采集目录映射」为每条 URL 选目标文件夹（无法归类 → 1.前端技术）
