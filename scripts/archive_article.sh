@@ -238,12 +238,6 @@ for attempt in 1 2 3; do
   [ "${attempt}" -lt 3 ] && sleep 5
 done
 
-if [ "${PUSH_OK}" = "0" ]; then
-  echo "⚠️  GitHub 推送失败（网络/认证）。文章已本地归档，稍后重试。" >&2
-  exit 2
-fi
-
-
 # ── Gitea 镜像同步（best-effort，2026-10-03）：失败不影响主归档流程 ──
 GITEA_REMOTE="gitea"
 if git remote get-url "" >/dev/null 2>&1; then
@@ -256,5 +250,11 @@ if git remote get-url "" >/dev/null 2>&1; then
 else
   echo "ℹ️  无  remote，跳过 Gitea 同步"
 fi
+
+if [ "${PUSH_OK}" = "0" ]; then
+  echo "⚠️  GitHub 推送失败（网络/认证）。文章已本地归档，稍后重试。" >&2
+  exit 2
+fi
+
 
 echo "=== 归档完成 ==="
