@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-04",
+  "title": "\"\u56e0\u5b50 IC \u5f88\u9ad8\uff0c\u8d26\u6237\u5374\u5f88\u60e8\uff1a\u4f60\u53ef\u80fd\u628a\u300c\u76f8\u5173\u6027\u300d\u5f53\u6210\u4e86\u300c\u8d5a\u94b1\u80fd\u529b\u300d\"",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-04",
+  "media_id": "",
+  "archived_at": "2026-10-04T07:36:55+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
