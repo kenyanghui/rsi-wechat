@@ -243,4 +243,18 @@ if [ "${PUSH_OK}" = "0" ]; then
   exit 2
 fi
 
+
+# ── Gitea 镜像同步（best-effort，2026-10-03）：失败不影响主归档流程 ──
+GITEA_REMOTE="gitea"
+if git remote get-url "" >/dev/null 2>&1; then
+  for attempt in 1 2; do
+    if GIT_TERMINAL_PROMPT=0 git -c http.connectTimeout=30          push "" "" 2>/dev/null; then
+      echo "✅ 已同步 Gitea 镜像 (/)"; break
+    fi
+    [ "" -lt 2 ] && sleep 5
+  done
+else
+  echo "ℹ️  无  remote，跳过 Gitea 同步"
+fi
+
 echo "=== 归档完成 ==="
