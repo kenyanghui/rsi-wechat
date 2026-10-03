@@ -102,3 +102,37 @@
 | 轮次 | 日期 | 质检分变化 | 比上轮强在哪 | 下轮重点 |
 |------|------|-----------|-------------|---------|
 | 第7轮（9-27） | 2026-09-27 | 平均 89（p1 84→94 复检/p2 85/p3 88） | p1 首轮 84 打回（抛硬币数学错误:2⁻²⁰≈1e6错误），writer 一改即 94，证明「事实锚定」维度守住数学严谨性；三主素材全首次（匿名AI量化谎言/OpenClaw淘金热/刘润战胜基因）；IMA同步3/3成功 | ①archive_article.sh 未把 manifest 的 media_id 写进 meta.json（空串，需修脚本提取）②sync_to_ima.sh manifest 相对路径 bug 仍存（本轮继续归档目录 workaround 成功）③GitHub push 本轮超时（网络到 github.com 不可达，commit 已本地完成 9e14202 待补推）|
+| 2026-09-28 | 趋势跟踪CTA失效（IMA微信文章） | 1 | 2026-09-28 | p1 认知层主素材（首次）|
+| 2026-09-28 | 基金经理饲养AI员工降维打击（IMA weburl） | 1 | 2026-09-28 | p2 商业层主素材（首次）|
+| 2026-09-28 | AI工具吃灰·分水岭是系统（IMA双三角系列） | 1 | 2026-09-28 | p3 心智层主素材（首次）|
+
+## 5b. 第8轮（9-28）快照补充
+| 轮次 | 日期 | 质检分变化 | 比上轮强在哪 | 下轮重点 |
+|------|------|-----------|-------------|---------|
+| 第8轮（9-28） | 2026-09-28 | 平均 88.3（p1 89/p2 82→87复检/p3 89） | 未触任何高频源，三主素材全首次；「事实锚定」维度再次立功——p2 首版开篇虚构"6个AI员工/KPI/编制"被 qa 以 veto:unsourced_claim 精准拦截，writer 一改即 87 过审；GitHub归档3篇 push origin/main 成功 | ①sync_to_ima.sh manifest article 字段 bug：p1/p2 存 None、p3 存相对路径，导致首跑"发现1篇却找不到文件"，本轮用空产物目录触发归档 fallback 三篇全同步成功，需根治（manifest article 字段统一写绝对路径或组件全不写 article 改读 imgs+article.md 约定）②archive_article.sh 仍把 media_id 写空串进 meta.json（上轮遗留未修），待修③opencli 热点连续多轮不可用（Extension未连）|
+
+| 2026-09-29 | 让大模型挖Alpha不再玄学炼丹（IMA微信文章） | 1 | 2026-09-29 | p1 认知层主素材（首次）|
+| 2026-09-29 | 相关性信号→经济基础Alpha（Marcus因果四层） | 1 | 2026-09-29 | p1 认知层主素材B（首次）|
+| 2026-09-29 | 港大开源AI量化神器·一句话生成策略 | 1 | 2026-09-29 | p2 商业层主素材（首次）|
+| 2026-09-29 | 量化是镰刀还是明镜·夏春长文 | 1 | 2026-09-29 | p3 心智层主素材（首次）|
+
+## 5b. 第9轮（9-29）快照补充
+| 轮次 | 日期 | 质检分变化 | 比上轮强在哪 | 下轮重点 |
+|------|------|-----------|-------------|---------|
+| 第9轮（9-29） | 2026-09-29 | 平均 84.7（p1 89/p2 82/p3 83） | 三翼零重叠（认知层LLM挖Alpha/商业层开源降门槛/心智层镰刀明镜），三主素材全首次未触任何高频源；p1 format 用 mxai（即梦5.0Pro）成功生成封面+插图（较此前全 PIL 兜底是一大进展）；GitHub归档3篇 push origin/main 成功；IMA同步3/3成功；三篇均成功拿 media_id 入库草稿箱 | ①archive_article.sh 仍把 media_id 写空串进 meta.json（多轮遗留待修）②sync_to_ima.sh manifest article 字段 bug 未根治③p2/p3 干货分(24)偏低，商业层/心智层内容偏二手转述，下轮需强化一手验证与独立增量 |
+
+## 2026-10-01（教育线独立，本条目为量化线）
+- 归档：articles/2026-10-01、-2、-3（3篇，push origin/main 成功）
+- IMA 同步：3/3 成功（「4.AI生产文章」，修复 manifest article 字段后重跑）
+- QA：p1=89认知层/p2=88商业层/p3=86心智层，全入库
+- 源清单：3篇主辅素材均新增（累计1），无高频复用源命中
+| 2026-10-02 | p1 为什么你越努力搭量化系统反而离赚钱越远 | 3xAF8cx1j73-yucQvAkNZeJenM3-tLznfkKZ2B5sPSX2CVtAhAypV2nUPRZbNCFC | 认知层·构建≠进步 | 归档 articles/2026-10-02 + IMA已同步 |
+| 2026-10-02 | p2 AI越强量化研究员越贵 | 3xAF8cx1j73-yucQvAkNZXv7KKmswD0S6dr3eelz6B_qyoxThtNVoWcnkOFTpqSQ | 商业层·执行商品化判断变贵 | 归档 articles/2026-10-02-2 + IMA已同步 |
+| 2026-10-02 | p3 赢钱之后才是最危险的时刻 | 3xAF8cx1j73-yucQvAkNZYY-uAufJgiZeyhmQ0ULH-b9T0ZjBQs14015oxDHt7Jc | 心智层·赢后过度自信 | 归档 articles/2026-10-02-3 + IMA已同步 |
+
+## 2026-10-03
+- 流水线：3 篇全过审入库（p1认知层87分/p2商业层89分/p3心智层88分），三主素材全首次互不重复（p3首轮与p1撞源《量化领域的考题》打回重选为东方财富·满融）。
+- 草稿箱：3/3 成功（p1 媒体ID 3xAF8cx1j73-yucQvAkNZXG8Am28wF1s8F1W1hS_G4mRJg5L1l5aDaLKiuZjwd-S / p2 3xAF8cx1j73-yucQvAkNZSkeyp8NExNuV054_8cUDWXi6_gNhIOn_5zoeerV1V-5 / p3 3xAF8cx1j73-yucQvAkNZRGVu-cN_ms4-8hWgPDLNfvxn3WITFeOPoAijRWif_UB）。
+- GitHub 归档：success（articles/2026-10-03 / -2 / -3，push origin/main 成功）。
+- IMA 同步：success（3/3，0 失败，入「4.AI生产文章」）。
+- 主素材新增 6 条已记 SOURCE-LEDGER.md。
