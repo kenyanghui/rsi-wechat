@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-07",
+  "title": "\u300c\u8ffd\u6da8\u6740\u8dcc\u300d\u88ab\u9a82\u4e86\u5341\u5e74\uff0c\u53ef\u80fd\u4f60\u4ece\u5934\u5230\u5c3e\uff0c\u90fd\u9a82\u9519\u4e86\u5bf9\u8c61",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-07",
+  "media_id": "",
+  "archived_at": "2026-10-07T07:59:53+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
