@@ -7,7 +7,7 @@
 
 每天 **08:08** 自动执行本线流水线，从 IMA 知识库**「廖晓老师」**选材，产出 **3 篇**公众号**「廖晓老师」**长文（**期货、期权投资、IPO 前股权投资**方向，角度互不重复），全部推送该号草稿箱，由廖晓老师人工选择群发。
 
-> **与量化线（PIPELINE.md）、教育线（PIPELINE-EDU.md）完全独立**：产物目录、选题台账、知识库、目标公众号均不同，三线互不复用产物、互不干扰。量化线的 GitHub 归档、sync-ima 回写、企微获客 CTA 均为量化线专属，**本线一律不做**。
+> **与量化线（PIPELINE.md）、教育线（PIPELINE-EDU.md）完全独立**：产物目录、选题台账、知识库、目标公众号均不同，三线互不复用产物、互不干扰。企微获客 CTA、GitHub 归档为量化线专属，本线不做；**成稿回写 IMA 知识库是本线硬规则**（见下节）。
 
 ## 流水线总览（Step -1 → 五步）
 
@@ -17,7 +17,8 @@ Step -1 素材采集与知识库喂养（主控执行，最先跑，≤40 分钟
   → writer（写作）
     → qa（质检，评分标准同量化线 qa-rubric.md + 投资合规一票否决）
       → format（排版 → 推「廖晓老师」草稿箱）
-        → 台账回收（SOURCE-LEDGER-FE.md 更新）
+    → 成稿回写（sync_to_ima → IMA「廖晓老师」库「5.公众号文章」）
+      → 台账回收（SOURCE-LEDGER-FE.md 更新）
 ```
 
 > Step -1 失败/超时**不得阻断** topic→writer→qa→format 主链：保存已导入成果，记录日志后直接进入 topic。
@@ -182,6 +183,21 @@ topic agent 选材时必须：
 - 封面与插图：沿用 mxai 生成，风格贴合投资/财经受众
 - IP 白名单已配置（2026-10-06 生效）：出口 IP `106.53.176.184`
 
+## 成稿回写（sync-ima）【本线专属硬规则】
+
+3 篇推送草稿箱完成后，主控把写好的成稿回写源头条源知识库——形成「选题→成稿→沉淀回库」的闭环：
+
+```bash
+IMA_KB_ID="G29-8mKAMyFzibCYGFPJcf0-7qNs_6f3QvaN4e9GEHg=" \
+IMA_FOLDER_ID="folder_7513162840543352" \
+bash /root/.openclaw/workspace/skills/rsi-wechat/scripts/sync_to_ima.sh \
+  <YYYY-MM-DD> /root/agents/shared/pipeline-fe/<YYYY-MM-DD>
+```
+
+- 目标：IMA「廖晓老师」库 → **「5.公众号文章」**（folder_7513162840543352，专存本线成稿）
+- 脚本按 `p*/format/manifest.json` 取清单，生成规范 Markdown（标题+作者+来源+摘要+正文）逐篇上传，自动去重
+- 失败不阻断主链，但必须告警并记 `_run.log`
+
 ## 台账回收
 
 - 流水线结束后核对 `SOURCE-LEDGER-FE.md` 已更新（3 篇素材均记账），格式同量化线台账
@@ -189,7 +205,6 @@ topic agent 选材时必须：
 ## 明确不做（本线范围外）
 
 - ❌ GitHub 归档（rsi-wechat 仓库属量化线）
-- ❌ sync-ima 回写知识库
 - ❌ 企微获客 CTA / 活码注入
 - ❌ 自动群发
 
