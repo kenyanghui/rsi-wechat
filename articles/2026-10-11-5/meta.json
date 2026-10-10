@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-11",
+  "title": "\u5f53\u56e0\u5b50\u5e93\u53d8\u6210\"\u52a8\u7269\u56ed\"\uff1a\u4e00\u5bb6\"\u4e0d\u5efa\u56e0\u5b50\u5e93\"\u7684\u767e\u4ebf\u79c1\u52df\uff0c\u6b63\u5728\u91cd\u753b\u91cf\u5316\u884c\u4e1a\u7684\u5165\u573a\u5238",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-11",
+  "media_id": "3xAF8cx1j73-yucQvAkNZRMpQuruW0CH7n6SzvamQbbLECkj0efkMSuMlfW3IIpW",
+  "archived_at": "2026-10-11T07:52:50+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
