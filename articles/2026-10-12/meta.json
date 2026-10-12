@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-12",
+  "title": "Alpha \u90fd\u85cf\u5728\u6700\u62e5\u6324\u7684\u80a1\u7968\u91cc\uff1a\u4f60\u8d5a\u7684\u8d85\u989d\uff0c\u53ef\u80fd\u662f\u4e00\u5f20\"\u5d29\u76d8\u4fdd\u9669\"\u7684\u8d26\u5355",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-12",
+  "media_id": "3xAF8cx1j73-yucQvAkNZfc4lzIozFwFJ9aLBmJc_puHP5Ut-Aoexri5cytrcaAt",
+  "archived_at": "2026-10-12T08:45:31+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
