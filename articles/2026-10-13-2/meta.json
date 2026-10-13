@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-13",
+  "title": "\u5238\u5546 AI \u6295\u7814\u5361\u4f4d\u6218\uff1a\u62a4\u57ce\u6cb3\u4e0d\u5728 Skill \u6570\u91cf",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-13",
+  "media_id": "",
+  "archived_at": "2026-10-13T08:05:11+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
