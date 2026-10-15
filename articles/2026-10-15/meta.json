@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-15",
+  "title": "AI \u81ea\u6211\u8fdb\u5316\u7684 5 \u4e2a\u5c42\u7ea7\uff1a\u770b\u61c2 RSI\uff0c\u624d\u77e5\u9053\u8c01\u7684\"\u81ea\u8fdb\u5316\"\u5728\u552c\u4eba",
+  "source_pipeline": "/root/agents/shared/pipeline/2026-10-15",
+  "media_id": "",
+  "archived_at": "2026-10-15T09:01:09+08:00",
+  "files": {
+    "article": "article.md",
+    "cover": "cover.png",
+    "images_dir": "images/"
+  }
+}
